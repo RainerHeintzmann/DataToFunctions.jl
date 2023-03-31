@@ -13,10 +13,18 @@ end
     data = rand(11,10)
     f = get_function(data; super_sampling=2);
     loss(p,z) = sum(abs2.(f(p, z) .- data))
+
+    # Zygote.forwarddiff needs only one input
+    loss(pz::Vector{Tuple{Float64, Float64}}) = loss(pz[1], pz[2])
+
+
     @test loss((0.0,0.0),(1.0,1.0)) < 1e-20
     @test loss((0.0,0.001),(1.0,1.0)) > 1e-20
     @test loss((0.0,0.0),(1.0001,1.0)) > 1e-20
 
+    # to take derivative of a interpolation process, it is better to use the Zygote.forwarddiff
+    @test Zygote.forwarddiff(loss, [(0.0, 0.0001), (1.0, 1.0)]) < 1e-6
+    
     # throws an error...
     # Zygote.gradient(loss, (0.0,0.0), (1.0,1.0))
 end
