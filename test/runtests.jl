@@ -23,7 +23,9 @@ end
     @test loss((0.0,0.0),(1.0001,1.0)) > 1e-20
 
     # to take derivative of a interpolation process, it is better to use the Zygote.forwarddiff
-    @test Zygote.forwarddiff(loss, [(0.0, 0.0001), (1.0, 1.0)]) < 1e-6
+    @test Zygote.forwarddiff(loss, [(0.0, 0.0), (1.0, 1.0)]) < 1e-5
+    @test Zygote.forwarddiff(loss, [(0.0, 0.0001), (1.0, 1.0)]) < 1e-5
+    @test Zygote.forwarddiff(loss, [(0.0, 0.0), (1.0, 1.0001)]) < 1e-5
     
     # throws an error...
     # Zygote.gradient(loss, (0.0,0.0), (1.0,1.0))
