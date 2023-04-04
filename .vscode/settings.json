@@ -1,4 +1,8 @@
 {
-    "julia.environmentPath": "/Users/hossein/Work/DataToFunctions.jl"
-    
+
+    "julia.NumThreads": 16,
+    "settingsSync.ignoredSettings": [
+        "-julia.NumThreads"
+    ],
+
 }

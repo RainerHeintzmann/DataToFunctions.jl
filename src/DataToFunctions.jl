@@ -36,6 +36,7 @@ function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=Fl
         return interpolation[scaled_axes...]
         # return extrapolate(scale(interpolation, scaled_axes...), extrapolation_bc)
     end
+    zoomed(p) = zoomed([p[1], p[2]], [p[3], p[4]]) 
 
     return zoomed
 
