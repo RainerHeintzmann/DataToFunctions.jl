@@ -96,7 +96,7 @@ end
 # first time:   4.749537 seconds (31.85 M allocations: 3.468 GiB, 8.50% gc time, 88.55% compilation time)
 # 2nd time:     0.645307 seconds (12.68 M allocations: 2.525 GiB, 56.30% gc time)
 # changing the fitting_data (noise values) : 0.448227 seconds (9.90 M allocations: 1.984 GiB, 27.55% compilation time: 38% of which was recompilation)
-@time est_m, ans_m = perform_optim_mthr(loss, 1000); 
+@time est_m, ans_m = perform_optim_mthr(loss, 500); 
 
 
 println(string(true_vals) * "\n" * string(ans_m))
@@ -126,6 +126,7 @@ for i in 2:size(fitting_data)[1]
     plot!(p12, fitting_data[i, :], color="black", legend=:none)
 end
 display(p12)
+
 plot(t)
 
 
