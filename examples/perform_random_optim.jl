@@ -28,7 +28,8 @@ scale_range = 4.0
 true_vals =  (rand(4) .* (upper .- lower)/scale_range ) .+ (lower/scale_range) #[3.0, 5.5, 1.85, 0.6]
 
 # create the fitting data and adding random noise with scale of 1/10
-fitting_data = f(true_vals) .+ rand(11, 12)./10.0
+noise = rand(11, 12)./10.0
+fitting_data = f(true_vals) .+ noise
 
 # create the loss function and using the Julia's multiple dispatch
 # because the gradients function is required just one input (can be vector)
@@ -89,18 +90,30 @@ end
 #@profile est_m, ans_m = perform_optim_mthr(loss, 10000)
 
 
-@time est_m, ans_m = perform_optim_mthr(loss, 5000); #  2.374773 seconds (59.62 M allocations: 11.897 GiB, 52.04% gc time, 4.47% compilation time: 42% of which was recompilation))
+# first time:   4.749537 seconds (31.85 M allocations: 3.468 GiB, 8.50% gc time, 88.55% compilation time)
+# 2nd time:     0.645307 seconds (12.68 M allocations: 2.525 GiB, 56.30% gc time)
+# changing the fitting_data (noise values) : 0.448227 seconds (9.90 M allocations: 1.984 GiB, 27.55% compilation time: 38% of which was recompilation)
+@time est_m, ans_m = perform_optim_mthr(loss, 1000); 
+
 
 println(string(true_vals) * "\n" * string(ans_m))
-# [1.07, -2.63, 0.78, 1.65]
-# [1.02, -2.60, 0.77, 1.66, 0.46]
+
+# [2.23, -1.16, 1.26, 2.59]
+# [2.26, -1.15, 1.27, 2.59, 0.41]
+
 
 p00 = heatmap(sample_data, aspect_ratio=1.0, clim=(0.0, 1.0), title="Sample data", legend = :none);
 p01 = heatmap(fitting_data, aspect_ratio=1.0, clim=(0.0,1.0), title="Fitting data", legend = :none);
 p02 = heatmap(f(ans_m[1:4]), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
 p03 = heatmap(fitting_data .- f(ans_m[1:4]), aspect_ratio=1.0, clim=(0.0,1.0), title="discrepancy", legend = :none);
 
-plot(p00, p01, p02, p03, layout=@layout([A B C D]), framestyle=nothing, showaxis=false, xticks=false, yticks=false, size=(700, 300))
+plot(p00, p01, p02, p03, layout=@layout([A B C D]), 
+    framestyle=nothing, showaxis=false, 
+    xticks=false, yticks=false, 
+    size=(700, 300),  
+    plot_title="True vals: $(true_vals)", plot_titlevspan=0.2
+)
+
 savefig("Output_mth_1.png")
 
 
