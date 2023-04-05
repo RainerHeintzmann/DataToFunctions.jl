@@ -3,6 +3,9 @@ using Optim, StaticArrays, LinearAlgebra
 using Zygote
 using ForwardDiff,  LineSearches, Plots, Printf
 using ProfileView, Profile
+using Random
+
+Random.seed!(123)
 
 # to show all the numbers in 2 decimals format
 Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f)
@@ -116,7 +119,14 @@ plot(p00, p01, p02, p03, layout=@layout([A B C D]),
 
 savefig("Output_mth_1.png")
 
-
+p12 = plot(fitting_data[1, :], color="black", legend=:none); 
+t = fitting_data[1, :]
+for i in 2:size(fitting_data)[1]  
+    t .+= fitting_data[i, :]
+    plot!(p12, fitting_data[i, :], color="black", legend=:none)
+end
+display(p12)
+plot(t)
 
 
 function perform_optim_sthr(loss, n_walkers=1000)
