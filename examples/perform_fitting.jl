@@ -7,11 +7,11 @@ using ForwardDiff,  LineSearches, Plots, Printf
 Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f)
 
 true_vals =   [1.0, 2.0, 1.0, 1.0]
-init_x =      [0.2, 0.5, 1.0, 1.0]
+init_x =      [0.5, 1.5, 1.0, 1.0]
 
 sample_data = rand(11,12)
 
-f = get_function(sample_data; super_sampling=2);
+f = get_function(sample_data; super_sampling=2, extrapolation_bc=0.0);
 #f(p0::Vector{Float64}) = f([p0[1], p0[2], p0[3], p0[4]])
 
 fitting_data = f(true_vals) .+ rand(11, 12)./10.0
@@ -54,12 +54,22 @@ res = optimize(
        lower, upper, 
        init_x, 
        Fminbox(inner_optimizer), 
-       #Optim.Options(store_trace = true, extended_trace = true, iterations=500), 
+       Optim.Options(store_trace = true, extended_trace = true, iterations=500), 
        autodiff = :forward
 )
 
 
+p00 = heatmap(sample_data, aspect_ratio=1.0, clim=(0.0, 1.0), title="Sample data", legend = :none);
+p01 = heatmap(fitting_data, aspect_ratio=1.0, clim=(0.0,1.0), title="Fitting data", legend = :none);
+p02 = heatmap(f(Optim.minimizer(res)), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
+p03 = heatmap(fitting_data .- f(Optim.minimizer(res)), aspect_ratio=1.0, clim=(0.0,1.0), title="discrepancy", legend = :none);
 
+plot(p00, p01, p02, p03, layout=@layout([A B C D]), 
+    framestyle=nothing, showaxis=false, 
+    xticks=false, yticks=false, 
+    size=(700, 300),  
+    plot_title="True vals: $(true_vals)", plot_titlevspan=0.2
+)
 
 heatmap(fitting_data .- f(Optim.x_trace(res)[end]), aspect_ratio=1, clim=(0.0, 1.0))
 

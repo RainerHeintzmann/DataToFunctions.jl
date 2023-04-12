@@ -3,7 +3,7 @@ using Optim, StaticArrays, LinearAlgebra
 using Zygote
 using ForwardDiff,  LineSearches, Plots, Printf
 using ProfileView, Profile
-using Random
+using Random, Distributions
 
 Random.seed!(123)
 
@@ -21,7 +21,7 @@ lower = [-1*size(sample_data)[1], -1*size(sample_data)[2], 0.0, 0.0]
 upper = [size(sample_data)[1], size(sample_data)[2], size(sample_data)[1], size(sample_data)[2]]
 
 # preparing the function to fit
-f = get_function(sample_data; super_sampling=2);
+f = get_function(sample_data; super_sampling=2, extrapolation_bc=0.0);
 
 # assigning a scale (multiplier) to the range of true values, wedo not want that the parameters of 
 # function to be near the limits and cause strange behavior of the optimization
@@ -31,8 +31,13 @@ scale_range = 4.0
 true_vals =  (rand(4) .* (upper .- lower)/scale_range ) .+ (lower/scale_range) #[3.0, 5.5, 1.85, 0.6]
 
 # create the fitting data and adding random noise with scale of 1/10
-noise = rand(11, 12)./10.0
-fitting_data = f(true_vals) .+ noise
+d = Normal()
+noise = rand(d, 11, 12)
+
+
+fitting_data = f(true_vals) #.+ noise / 10.0
+heatmap(fitting_data, aspect_ratio=1.0)
+savefig("fitting_data_without_noise.png")
 
 # create the loss function and using the Julia's multiple dispatch
 # because the gradients function is required just one input (can be vector)
@@ -116,8 +121,19 @@ plot(p00, p01, p02, p03, layout=@layout([A B C D]),
     size=(700, 300),  
     plot_title="True vals: $(true_vals)", plot_titlevspan=0.2
 )
+savefig("Output_mth.png")
 
-savefig("Output_mth_1.png")
+
+plot(
+    heatmap(fitting_data .- f(ans_m[1:4]), aspect_ratio=1.0, clim=(0.0, 0.3), title="discrepancy", legend = :none), 
+    heatmap(noise / 10.0 , aspect_ratio=1.0, clim=(0.0, 0.3), title="noise", legend = :none), 
+    layout=@layout([A B]), 
+    framestyle=nothing, showaxis=false, 
+    xticks=false, yticks=false, 
+    size=(700, 300),  
+    plot_title="Noise comparison", plot_titlevspan=0.2
+)
+savefig("Discrepancy.png")
 
 p12 = plot(fitting_data[1, :], color="black", legend=:none); 
 t = fitting_data[1, :]
