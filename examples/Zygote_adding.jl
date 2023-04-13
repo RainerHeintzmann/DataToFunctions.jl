@@ -1,5 +1,5 @@
 using Zygote
-using .DataToFunctions
+using DataToFunctions
 
 data = rand(11,10)
 f = get_function(data; super_sampling=2);

@@ -4,5 +4,7 @@
     "settingsSync.ignoredSettings": [
         "-julia.NumThreads"
     ],
-
+    "terminal.integrated.env.linux":{
+        "JULIA_COPY_STACKS": "1"
+    },
 }
