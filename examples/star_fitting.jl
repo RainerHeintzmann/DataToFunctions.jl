@@ -6,15 +6,22 @@ using View5D
 using Distributions
 using Plots
 
-Base.show(io::IO, f::Float64) = @printf(io, "%.2f", f)
+using Rotations
+using CoordinateTransformations
+
+Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 
 # defining the mean and the varixance of the test normal (Gaussian) distribution
 μ = [0, 0]
 Σ = [2  0.0;
      0.0 2]
 
+Σ_d = [2  1.5;
+     1.5 2]
+
 # initializing the multivariate normal distribution
 p = MvNormal(μ, Σ)
+p_d = MvNormal(μ, Σ_d)
 
 # size of the test array to fit
 size_arr = 12.0
@@ -24,22 +31,27 @@ X = -1*size_arr/2.0:1*size_arr/2.0
 Y = -1*size_arr/2.0:1*size_arr/2.0 
 
 z = [pdf(p, [x,y]) for y in Y, x in X]
+z_d = [pdf(p_d, [x,y]) for y in Y, x in X]
 
-@vv z
+# @vv z
+heatmap(z, aspect_ratio=1)
+heatmap(z_d, aspect_ratio=1)
 
 # setting a typical values for the shift (1:2) and scale (3:4)
-true_vals =   [1.1, -1.5, 0.75, 1.5]
+true_vals =   [1.1, -1.5, 0.75, 1.5, pi/2]
 
 # normalizing the sample data
 sample_data = z./maximum(z) 
+sample_data_d = z_d./maximum(z_d)
 
 # converting the data to function (DataToFunctions.get_function)
 f = get_function(sample_data; super_sampling=2, extrapolation_bc=0.0);
+f_d = get_function(sample_data_d; super_sampling=2, extrapolation_bc=0.0);
 
 # adding some scaled random noise to the fitting data
-fitting_data = f(true_vals) .+ rand(13, 13)./10.0
+fitting_data = f_d(true_vals) .+ rand(13, 13)./40.0
 
-@vv fitting_data
+# @vv fitting_data
 
 # defining the loss function based on the gaussian noise
 loss(p) = sum(abs2.(f(p) .- fitting_data))
