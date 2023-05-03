@@ -35,13 +35,13 @@ function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=ze
     # create zero-centered original ranges (== axes)
     zero_axes = Tuple(ax .- c  for (ax, c) in zip(axes(data), center_orig))
     # center of the upsampled data. This is where to access the upsampled data
-    function zoomed(shift, zoom, theta)
+    function zoomed(shift, zoom)
         zoom = zoom .* super_sampling
         # careful: The center of the original data is not at the expected position! But rather at:
         center_upsamp = new_size .÷2 .+1 # ((center_orig .-1) .*super_sampling .+1)  # new_size .÷2 .+1
         scaled_axes = ((ax.-myc) .* z .+ cen for (ax, myc, cen, z) in zip(zero_axes, shift, center_upsamp, zoom))
         # @show Tuple(scaled_axes)
-        return rotate(interpolation[scaled_axes...], theta)
+        return interpolation[scaled_axes...]
         # return extrapolate(scale(interpolation, scaled_axes...), extrapolation_bc)
     end
     zoomed(p) = zoomed([p[1], p[2]], [p[3], p[4]], [p[5]]) 
