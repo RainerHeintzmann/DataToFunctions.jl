@@ -52,4 +52,51 @@ function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=ze
 
 end
 
+
+
+"""
+    perform_fit(loss_function, fitting_data::AbstractArray)
+
+Performs a fit to the fitting data using a loss function defined by the user
+
+# Arguments
+`loss_function`: User-defined loss function which is minimized
+`fitting_data`: The data which is being fitted 
+
+# Returns
+a vector of 4 parameters: first 2 for the shift and other 2 for the scaling factors
+
+# Example
+there is an example of this function in the `examples/star_fitting.jl`
+
+"""
+function perform_fit(loss_function, fitting_data::AbstractArray)
+    # guess the shift parameters by taking the maximum values of the array and
+    # centering the positions
+    a, b = Tuple(argmax(fitting_data)) .- size(fitting_data) ./2.0 .- 1.0
+    
+    # assigning the initial parameter estimates
+    init_x = [a, b, 1.0, 1.0]
+
+    # setting the lower and upper boundary of the parameter values based on the limits of the shift and scaling
+    lower = [-1*size(fitting_data)[1], -1*size(fitting_data)[2], 0.0, 0.0]
+    upper = [size(fitting_data)[1], size(fitting_data)[2], size(fitting_data)[1], size(fitting_data)[2]]
+
+    # initializing the LBFGS optimizer
+    inner_optimizer = LBFGS(; m=1, linesearch=LineSearches.BackTracking(order=2))
+    
+    # Computer, Optimize! :D
+    res = optimize(
+            loss_function, 
+            lower, upper, 
+             init_x, 
+            Fminbox(inner_optimizer), 
+            Optim.Options(store_trace = true, extended_trace = true, iterations=500), 
+             autodiff = :forward
+        )
+    
+    # return the estimated parameters
+    return Optim.minimizer(res)
+end
+
 end # module DataToFunctions
