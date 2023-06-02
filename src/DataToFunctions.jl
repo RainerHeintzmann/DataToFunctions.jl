@@ -106,28 +106,40 @@ function perform_fit(loss_function, fitting_data::AbstractArray)
 end
 
 
+"""
+    get_function_general(data::AbstractArray; super_sampling=1, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
 
-function get_function_general(data::AbstractArray; super_sampling=1)
+returns a function `interpolated(p)` which generates a transformed version of the original data. 
+This is useful for fitting with a function which is itself defined by measured data.
+
+# Arguments
+`data`: The data to represent by the function `dat`
+`extrapolation_bc`: The extrapolation boundary condition to select for values outside the range. 
+    By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
+`interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
+
+"""
+function get_function_general(data::AbstractArray; extrapolation_bc=0.0, interp_type=Interpolations.BSpline(Linear()))
     # new_size = super_sampling.*size(data)
     # upsampled = fftshift(resample(ifftshift(data), new_size))
 
-    itp = extrapolate(interpolate(data, BSpline(Linear())), 0.0);
+    # building the extraplation + interpolation object
+    itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
 
+    # multiplying the transformation matrix
     function f(t::SVector, matrix_c::SMatrix) 
         return matrix_c * t
     end
 
     function interpolated(p)
         
+        # init a new array for the output
         out = similar(data)
-        x_tmp = Zygote.Buffer(out)
 
         x_cen, y_cen = (size(data) .÷ 2.0 .+1)
         # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
 
-        # scale_x *= super_sampling
-        # scale_y *= super_sampling
-        # @show p[1]
+        # creating the matrices of rotation, shear, scale, and shift
         rot_mat =  @SMatrix [cos(p[7])  -1.0*sin(p[7]) 0.0; sin(p[7])  cos(p[7]) 0.0; 0.0 0.0 1.0];
         shear_mat = @SMatrix [1.0 p[5] 0.0; p[6] 1.0 0.0; 0.0 0.0 1.0];
         scale_mat = @SMatrix [1/p[3] 0.0 0.0; 0.0 1/p[4] 0.0; 0.0 0.0 1.0];
@@ -136,15 +148,18 @@ function get_function_general(data::AbstractArray; super_sampling=1)
         t_to_center = @SMatrix [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
         # t_orig_upsampled = @SMatrix [1.0 0.0 -1.0*x_cen_up; 0.0 1.0 -1.0*y_cen_up; 0.0 0.0 1.0]
 
+        # building the overall transformation matrix
         matrix_c = t_to_origin * scale_mat * shear_mat * rot_mat *shift_mat * t_to_center
 
-        
-
+        # looping all over the catesian indedices of the input image, 
+        # first ading a new value to its third dimenstion: 1.0,
+        # converting to the new indices using the transformation matrix and then,
+        # using the "itp" object, we build the transfomed image "out"
         for I in CartesianIndices(data)
-            x_tmp[I] = itp(f(SVector(Tuple(I)..., 1), matrix_c)[1:2]...)
+            out[I] = itp(f(SVector(Tuple(I)..., 1), matrix_c)[1:2]...)
         end
         
-        return copy(x_tmp)
+        return out
     end
 
     return interpolated
@@ -152,7 +167,7 @@ end
 
 
 """
-    perform_fit(loss_function, fitting_data::AbstractArray)
+    perform_fit_general(loss_function, fitting_data::AbstractArray)
 
 Performs a fit to the fitting data using a loss function defined by the user
 
@@ -161,10 +176,10 @@ Performs a fit to the fitting data using a loss function defined by the user
 `fitting_data`: The data which is being fitted 
 
 # Returns
-a vector of 4 parameters: first 2 for the shift and other 2 for the scaling factors
+a vector of 7 parameters: 2 for the shift, 2 for the scaling, 2 for shear, and 1 for rotation angle
 
 # Example
-there is an example of this function in the `examples/star_fitting.jl`
+there is an example of this function in the `examples/star_fitting_genaral.jl`
 
 """
 function perform_fit_general(loss_function, fitting_data::AbstractArray)
@@ -173,9 +188,9 @@ function perform_fit_general(loss_function, fitting_data::AbstractArray)
     a, b = Tuple(argmax(fitting_data)) .- size(fitting_data) ./2.0 .- 1.0
     
     # assigning the initial parameter estimates
-    init_x = [a, b, 1.0, 1.0, 0.0, 0.0, 0.0]
+    init_x = [a, b, 1.0, 1.0, 0.001, 0.001, 0.001]
 
-    # setting the lower and upper boundary of the parameter values based on the limits of the shift and scaling
+    # setting the lower and upper boundary of the parameter values based on their limits
     lower = [-1*size(fitting_data)[1], -1*size(fitting_data)[2], 0.0, 0.0, 0.0, 0.0, 0.0]
     upper = [size(fitting_data)[1], size(fitting_data)[2], size(fitting_data)[1], size(fitting_data)[2], 5.0, 5.0, pi]
 
