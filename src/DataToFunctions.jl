@@ -1,9 +1,9 @@
 module DataToFunctions
 using Interpolations
 using FourierTools
-using Optim, LineSearches
+using Optim #, LineSearches
 using Revise
-using StaticArrays, LinearAlgebra
+using StaticArrays #, LinearAlgebra
 using Zygote
 
 export get_function, perform_fit, get_function_general, perform_fit_general, get_function_general_matrix
@@ -252,7 +252,7 @@ function perform_fit_general(loss_function, fitting_data::AbstractArray)
     ##upper = [size(fitting_data)[1], size(fitting_data)[2], size(fitting_data)[1], size(fitting_data)[2], 5.0, 5.0, pi]
 
     # initializing the LBFGS optimizer
-    inner_optimizer = LBFGS(; m=1, linesearch=LineSearches.BackTracking(order=2))
+    # inner_optimizer = LBFGS(; m=1, linesearch=LineSearches.BackTracking(order=2))
     
     # Computer, Optimize! :D
     res = optimize(

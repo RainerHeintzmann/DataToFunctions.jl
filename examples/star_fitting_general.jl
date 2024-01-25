@@ -70,7 +70,6 @@ f_general = get_function_general_matrix(sample_data);#; super_sampling=1);#, ext
 fitting_data = f_general(matrix_c) .+ rand(size(sample_data)...)./100.0;
 heatmap(fitting_data, aspect_ratio=1)
 
-# @vv fitting_data
 
 # defining the loss function based on the gaussian noise
 loss(p) = sum(abs2.(f_general(p) .- fitting_data))
