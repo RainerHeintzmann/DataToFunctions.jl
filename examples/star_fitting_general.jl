@@ -3,16 +3,21 @@ using Optim, StaticArrays, LinearAlgebra
 using Zygote
 using ForwardDiff, LineSearches, Plots, Printf
 using View5D
-using Distributions
+using Distributions, Rotations
 using Plots
 
 
 Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 
+# size of the test array to fit
+size_arr = 31.0
+
+noise_level = 10.0;
+
 # defining the mean and the varixance of the test normal (Gaussian) distribution
 μ = [0, 0]
-Σ = [2  0.0;
-     0.0 2]
+Σ = [size_arr/1.2  0.0;
+     0.0 size_arr/1.2]
 
 Σ_d = [2  1.5;
      1.5 2]
@@ -20,8 +25,7 @@ Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 # initializing the multivariate normal distribution
 p = MvNormal(μ, Σ)
 
-# size of the test array to fit
-size_arr = 12.0
+
 
 # this part of the code is to define the sample array based on a 2D normal distribution
 X = -1*size_arr/2.0:1*size_arr/2.0
@@ -31,21 +35,39 @@ z = [pdf(p, [x,y]) for y in Y, x in X]
 
 # @vv z
 
-heatmap(z, aspect_ratio=1)
+
 
 # setting a typical values for the shift (1:2) and scale (3:4)
 # true_vals =   [1.15, -0.73, 2.1, 0.9, 0.0, 0.0, pi/6]
-true_vals =   [2.3, -1.2, 0.9, 2.1, 0.1, 0.05, pi/6]
+# true_vals =   [2.3, -1.2, 0.9, 2.1, 0.1, 0.05, pi/2, 2.0, 3.0]
 
 # normalizing the sample data
-sample_data = z./maximum(z) 
+sample_data = Float32.(z./maximum(z)) 
+sample_data .+= rand(size(sample_data)...)./noise_level;
+heatmap(sample_data, aspect_ratio=1)
+
+
+x_cen, y_cen = (size(sample_data) .÷ 2.0 .+1)
+
+ang = rand((0.0:0.1:pi))
+rot_mat =  [cos(ang)  -1.0*sin(ang) 0.0; sin(ang)  cos(ang) 0.0; 0.0 0.0 1.0];
+
+shear_mat = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0];
+scale_mat = [1/1.2 0.0 0.0; 0.0 1/1.8 0.0; 0.0 0.0 1.0];
+
+t_to_origin = [1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
+t_to_center = [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
+        
+matrix_c = t_to_origin * scale_mat * shear_mat * rot_mat * t_to_center 
+
+
 
 # converting the data to function (DataToFunctions.get_function)
-f_general = get_function_general(sample_data; super_sampling=1);#, extrapolation_bc=0.0);
+f_general = get_function_general_matrix(sample_data);#; super_sampling=1);#, extrapolation_bc=0.0);
 # f_d = get_function_loop(sample_data_d; super_sampling=1);#, extrapolation_bc=0.0);
 
 # adding some scaled random noise to the fitting data
-fitting_data = f_general(true_vals) .+ rand(13, 13)./10.0
+fitting_data = f_general(matrix_c) .+ rand(size(sample_data)...)./100.0;
 heatmap(fitting_data, aspect_ratio=1)
 
 # @vv fitting_data
@@ -58,27 +80,31 @@ loss(p) = sum(abs2.(f_general(p) .- fitting_data))
 
 
 # perform the main fit to the fitting data by minimizing the loss function
-output, res = perform_fit_general(loss, fitting_data)
+@time output, res = perform_fit_general(loss, fitting_data)
 
 # plotting the output of the fitting pocedure for further illustration
 begin
     p00 = heatmap(sample_data, aspect_ratio=1.0, clim=(0.0, 1.0), title="Sample data", legend = :none);
     p01 = heatmap(fitting_data, aspect_ratio=1.0, clim=(0.0,1.0), title="Fitting data", legend = :none);
-    p02 = heatmap(f_general(output), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
+    p02 = heatmap(f_general(reshape(output, ndims(fitting_data)+1, ndims(fitting_data)+1)), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
     p03 = heatmap(fitting_data .- f_general(output), aspect_ratio=1.0, clim=(0.0, 0.3), title="discrepancy", legend = :none);
 
     plot(p00, p01, p02, p03, layout=@layout([A B C D]), 
         framestyle=nothing, showaxis=false, 
         xticks=false, yticks=false, 
         size=(1200, 500),  
-        plot_title="True vals: $(true_vals)
-  est vals: $(output)",
-        plot_titlevspan=0.25
+        #plot_title="True vals: $(matrix_c)
+  #est vals: $(reshape(output, ndims(fitting_data)+1, ndims(fitting_data)+1))",
+        #plot_titlevspan=0.2
     )
 end
 
+
+matrix_c
+reshape(output, ndims(fitting_data)+1, ndims(fitting_data)+1)
 # comparing the true values to the best fitting parameters 
-println(string(true_vals) * "\n" * string(output))
+
+#println(matrix_c)  * reshape(output, ndims(fitting_data)+1, ndims(fitting_data)+1)
 
 
 
@@ -104,4 +130,5 @@ anim = @animate for i1 in 1:length(Optim.x_trace(res))
 
 end;
 
-gif(anim, "examples/anim_general_3.mp4", fps=4)
+gif(anim, "DataToFunctions.jl/examples/anim_general_generalized.mp4", fps=2)
+
