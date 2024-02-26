@@ -1,7 +1,9 @@
 module DataToFunctions
 using Interpolations
 using FourierTools
-export get_function
+using StaticArrays
+
+export get_function, get_function_affine
 
 """
     get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -23,7 +25,7 @@ This is useful for fitting with a function which is itself defined by measured d
 function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear()))
     new_size = super_sampling.*size(data)
     upsampled = fftshift(resample(ifftshift(data), new_size))
-    @show upsampled
+    # @show upsampled
     # return upsampled
     # itp = LinearInterpolation(axes(upsampled), upsampled, extrapolation_bc=extrapolation_bc);
     interpolation = Interpolations.interpolate(upsampled, interp_type)
@@ -45,11 +47,104 @@ function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=ze
 
     return zoomed
 
+    zoomed(p) = zoomed([p[1], p[2]], [p[3], p[4]])
     # return (pos) -> interp_linear((center .+ pos)...)
     # fitp(t) = interp_linear(t...)
     # @time res1 = fitp.(tcoords);  # 1 sec
     # function my_zoom
 
 end
+
+
+
+
+"""
+    get_function_affine(data::AbstractArray; super_sampling=1, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
+
+returns a function `interpolated(p)` which generates a transformed version of the original data. 
+This is useful for fitting with a function which is itself defined by measured data.
+
+# Arguments
+`data`: The data to represent by the function `dat`
+`extrapolation_bc`: The extrapolation boundary condition to select for values outside the range. 
+    By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
+`interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
+
+"""
+function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
+    #new_size = super_sampling.*size(data)
+    #upsampled = fftshift(resample(ifftshift(data), new_size))
+
+    # building the extraplation + interpolation object
+    itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
+
+    # multiplying the transformation matrix
+    function f(t::SVector, matrix_c::SMatrix) 
+        return matrix_c * t
+    end
+
+    function interpolated(matrix_c::SMatrix)
+        
+        # init a new array for the output
+        out = similar(data, T)
+
+        # x_cen, y_cen = (size(data) .÷ 2.0 .+1)
+
+        # t_orig_upsampled = @SMatrix [1.0 0.0 -1.0*x_cen_up; 0.0 1.0 -1.0*y_cen_up; 0.0 0.0 1.0]
+
+        # building the overall transformation matrix
+        #   matrix_c = SMatrix{ndims(data)+1, ndims(data)+1, T}(reshape(p, ndims(data)+1, ndims(data)+1))
+        
+        #print(eltype(matrix_c))
+        # looping all over the catesian indedices of the input image, 
+        # first ading a new value to its third dimenstion: 1.0,
+        # converting to the new indices using the transformation matrix and then,
+        # using the "itp" object, we build the transfomed image "out"
+        for I1 in CartesianIndices(data)
+            #print("INSIde the loop!!")
+            #print(eltype(SVector{ndims(data)+1, T}(Tuple(I1)..., 1)))
+            out[I1] = itp(f(SVector{ndims(data)+1, T}(Tuple(I1)..., 1.0), matrix_c)[1:2]...)
+            #print(eltype(out[I1]))
+        end
+        
+        return out
+    end
+
+    function interpolated(p::AbstractVector{T}) where T
+        
+        # init a new array for the output
+        out = similar(data)
+
+        x_cen, y_cen = (size(data) .÷ 2.0 .+1)
+        # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
+
+        # creating the matrices of rotation, shear, scale, and shift
+        rot_mat =  @SMatrix [cos(p[7])  -1.0*sin(p[7]) 0.0; sin(p[7])  cos(p[7]) 0.0; 0.0 0.0 1.0];
+        shear_mat = @SMatrix [1.0 p[5] 0.0; p[6] 1.0 0.0; 0.0 0.0 1.0];
+        scale_mat = @SMatrix [1/p[3] 0.0 0.0; 0.0 1/p[4] 0.0; 0.0 0.0 1.0];
+        shift_mat = @SMatrix [1.0 0.0 -1*p[1]; 0.0 1.0 -1*p[2]; 0.0 0.0 1.0];
+        t_to_origin = @SMatrix [1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
+        t_to_center = @SMatrix [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
+        # t_orig_upsampled = @SMatrix [1.0 0.0 -1.0*x_cen_up; 0.0 1.0 -1.0*y_cen_up; 0.0 0.0 1.0]
+
+        # building the overall transformation matrix
+        # matrix_c = t_to_origin * scale_mat * shear_mat * rot_mat *shift_mat * t_to_center
+        matrix_c = t_to_origin * scale_mat * rot_mat *shift_mat * t_to_center
+
+        # looping all over the catesian indedices of the input image, 
+        # first ading a new value to its third dimenstion: 1.0,
+        # converting to the new indices using the transformation matrix and then,
+        # using the "itp" object, we build the transfomed image "out"
+        for I1 in CartesianIndices(data)
+            out[I1] = itp(f(SVector(Tuple(I1)..., 1), matrix_c)[1:2]...)
+        end
+        
+        return out
+    end
+
+    return interpolated
+end
+
+
 
 end # module DataToFunctions
