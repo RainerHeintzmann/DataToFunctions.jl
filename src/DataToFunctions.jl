@@ -3,7 +3,8 @@ using Interpolations
 using FourierTools
 using StaticArrays
 
-export get_function, get_function_affine
+export get_function, get_function_affine, add_dim, red_dim_apply, red_dim, f
+export extrapolate, interpolate
 
 """
     get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -55,8 +56,22 @@ function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=ze
 
 end
 
+function add_dim(cind)
+    return SVector.((Tuple(cind))..., 1)
+end
 
+@inline function red_dim_apply(fct, svec::SVector{S,T})::Float64 where {S,T}
+    return fct((@view svec[1:2])...)
+end
 
+@inline function red_dim(svec::SVector{S,T})::SVector{S-1,T} where {S,T}
+    return @view svec[1:S-1]
+end
+
+# multiplying the transformation matrix
+@inline function f(t::SVector{N, Int}, matrix_c::SMatrix{N,N,T})::SVector{N,T} where {N,T}
+    return matrix_c * t
+end
 
 """
     get_function_affine(data::AbstractArray; super_sampling=1, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -78,10 +93,6 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
     # building the extraplation + interpolation object
     itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
 
-    # multiplying the transformation matrix
-    function f(t::SVector, matrix_c::SMatrix) 
-        return matrix_c * t
-    end
 
     function interpolated(matrix_c::SMatrix)
         
@@ -110,8 +121,7 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         return out
     end
 
-    function interpolated(p::AbstractVector{T}) where T
-        
+    function interpolated(p::AbstractVector{T}) where T        
         # init a new array for the output
         out = similar(data)
 
@@ -138,7 +148,9 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         for I1 in CartesianIndices(data)
             out[I1] = itp(f(SVector(Tuple(I1)..., 1), matrix_c)[1:2]...)
         end
-        
+
+        # out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)))
+
         return out
     end
 
