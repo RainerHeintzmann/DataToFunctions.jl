@@ -7,6 +7,10 @@ using Distributions, Rotations
 using Plots
 using TestImages
 
+
+import Random
+Random.seed!(1234)
+
 Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 
 
@@ -33,7 +37,7 @@ function perform_fit_general(loss_function, fitting_data::AbstractArray)
     ##a, b = Tuple(argmax(fitting_data)) .- size(fitting_data) ./2.0 .- 1.0
     #print("INSIDE!!! hehe")
     # assigning the initial parameter estimates
-    init_x = vec([1.0, -2.0, 1.0, 1.0, 0.0, 0.0, 0.0]) #ndims(fitting_data)+1, ndims(fitting_data)+1))
+    init_x = vec([0.5, -1.5, 1.0, 1.0, 0.0, 0.0, pi/5]) #ndims(fitting_data)+1, ndims(fitting_data)+1))
     # reshape(Matrix(1.0*I, ndims(fitting_data)+1, ndims(fitting_data)+1), 1, 9)) #[a, b, 1.0, 1.0, 0.001, 0.001, 0.001]
 
     # setting the lower and upper boundary of the parameter values based on their limits
@@ -133,18 +137,18 @@ z = [pdf(p, [x,y]) for y in Y, x in X]
 
 # @vv z
 
-
+dtype = Float64
 
 # setting a typical values for the shift (1:2) and scale (3:4)
-true_vals =   [0.5, -1.5, 1.0, 1.0, 0.0, 0.0, pi/4]#pi/6]
+true_vals =   dtype.([0.2, -1.2, 1.0, 1.0, 0.0, 0.0, pi/3])#pi/6]
 #true_vals =   [2.3, -1.2, 0.9, 2.1, 0.1, 0.05, pi/2, 2.0, 3.0]
 
 # normalizing the sample data
 #sample_data = Float32.(z./maximum(z)) 
 #sample_data = TestImages.shepp_logan(32);
-sample_data = rand.(size_arr, size_arr);
+sample_data = rand(dtype, (size_arr, size_arr))
 
-sample_data .+= rand(size(sample_data)...)./noise_level;
+sample_data .+=  rand(dtype, (size(sample_data)...))./noise_level;
 
 
 
@@ -163,13 +167,13 @@ f_general = get_function_affine(sample_data);#; super_sampling=1);#, extrapolati
 ang = rand((0.0:0.1:pi))
 rot_mat =  [cos(ang)  -1.0*sin(ang) 0.0; sin(ang)  cos(ang) 0.0; 0.0 0.0 1.0];
 
-matrix_c = Float32.(t_to_origin * scale_mat * shear_mat * rot_mat * t_to_center )
+matrix_c = dtype.(t_to_origin * scale_mat * shear_mat * rot_mat * t_to_center )
 
 # f_d = get_function_loop(sample_data_d; super_sampling=1);#, extrapolation_bc=0.0);
 
 # adding some scaled random noise to the fitting data
 # fitting_data = f_general(SMatrix{3,3}(matrix_c)); #.+ rand(size(sample_data)...)./100.0;
-fitting_data = f_general(true_vals) .+ rand(size(sample_data)...)./10.0;
+fitting_data = f_general(true_vals) .+ dtype.(rand(size(sample_data)...))./5.0;
 
 
 plot(heatmap(sample_data, aspect_ratio=1), heatmap(fitting_data, aspect_ratio=1))
@@ -204,7 +208,10 @@ begin
 end
 
 
-matrix_c
+
+
+
+#matrix_c
 # comparing the true values to the best fitting parameters 
 
 #println(matrix_c)  * reshape(output, ndims(fitting_data)+1, ndims(fitting_data)+1)

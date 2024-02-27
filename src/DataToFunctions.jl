@@ -60,7 +60,7 @@ function add_dim(cind)
     return SVector.((Tuple(cind))..., 1)
 end
 
-@inline function red_dim_apply(fct, svec::SVector{S,T})::Float64 where {S,T}
+@inline function red_dim_apply(fct::AbstractArray{R}, svec::SVector{S,T})::R where {S,T, R}
     return fct((@view svec[1:2])...)
 end
 
@@ -121,7 +121,7 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         return out
     end
 
-    function interpolated(p::AbstractVector{T}) where T        
+    function interpolated(p::AbstractVector{T}) where T     
         # init a new array for the output
         out = similar(data)
 
@@ -145,11 +145,12 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         # first ading a new value to its third dimenstion: 1.0,
         # converting to the new indices using the transformation matrix and then,
         # using the "itp" object, we build the transfomed image "out"
-        for I1 in CartesianIndices(data)
-            out[I1] = itp(f(SVector(Tuple(I1)..., 1), matrix_c)[1:2]...)
-        end
+        
+        #for I1 in CartesianIndices(data)
+        #    out[I1] = itp(f(SVector(Tuple(I1)..., 1), matrix_c)[1:2]...)
+        #end
 
-        # out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)))
+        out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)));
 
         return out
     end
