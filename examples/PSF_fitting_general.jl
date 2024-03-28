@@ -42,7 +42,7 @@ function perform_fit_general(loss_function, fitting_data::AbstractArray)
 
     # setting the lower and upper boundary of the parameter values based on their limits
     lower = [-1*size(fitting_data)[1], -1*size(fitting_data)[2], 0.0, 0.0, 0.0, 0.0, 0.0]
-    upper = [size(fitting_data)[1], size(fitting_data)[2], size(fitting_data)[1], size(fitting_data)[2], 2.0, 2.0, pi]
+    upper = [size(fitting_data)[1], size(fitting_data)[2], size(fitting_data)[1], size(fitting_data)[2], 1.0, 1.0, pi]
 
     # initializing the LBFGS optimizer
     inner_optimizer = LBFGS(; m=1, linesearch=LineSearches.BackTracking(order=2))
@@ -145,10 +145,10 @@ true_vals =   dtype.([0.2, -1.2, 1.0, 1.0, 0.0, 0.0, pi/3])#pi/6]
 
 # normalizing the sample data
 #sample_data = Float32.(z./maximum(z)) 
-#sample_data = TestImages.shepp_logan(32);
-sample_data = rand(dtype, (size_arr, size_arr))
+sample_data = dtype.(TestImages.shepp_logan(32));
+#sample_data = rand(dtype, (size_arr, size_arr))
 
-sample_data .+=  rand(dtype, (size(sample_data)...))./noise_level;
+#sample_data .+=  rand(dtype, (size(sample_data)...))./noise_level;
 
 
 

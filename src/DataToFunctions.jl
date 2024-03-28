@@ -3,7 +3,7 @@ using Interpolations
 using FourierTools
 using StaticArrays
 
-export get_function, get_function_affine, add_dim, red_dim_apply, red_dim, f
+export get_function, get_function_affine, add_dim, red_dim_apply, red_dim, f, func_transform
 export extrapolate, interpolate
 
 """
@@ -69,9 +69,16 @@ end
 end
 
 # multiplying the transformation matrix
-@inline function f(t::SVector{N, Int}, matrix_c::SMatrix{N,N,T})::SVector{N,T} where {N,T}
+@inline function f(t::SVector{N, Int64}, matrix_c::SMatrix{N,N,T})::SVector{N,T} where {N,T}
     return matrix_c * t
 end
+
+
+# Applying the coordinate transformation function
+@inline function func_transform(t, coord_transform_func::Function)::SVector
+    return coord_transform_func(Tuple(t))
+end
+
 
 """
     get_function_affine(data::AbstractArray; super_sampling=1, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -97,7 +104,7 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
     function interpolated(matrix_c::SMatrix)
         
         # init a new array for the output
-        out = similar(data, T)
+        out = data
 
         # x_cen, y_cen = (size(data) .÷ 2.0 .+1)
 
@@ -111,19 +118,30 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         # first ading a new value to its third dimenstion: 1.0,
         # converting to the new indices using the transformation matrix and then,
         # using the "itp" object, we build the transfomed image "out"
-        for I1 in CartesianIndices(data)
+        
+        #for I1 in CartesianIndices(data)
             #print("INSIde the loop!!")
             #print(eltype(SVector{ndims(data)+1, T}(Tuple(I1)..., 1)))
-            out[I1] = itp(f(SVector{ndims(data)+1, T}(Tuple(I1)..., 1.0), matrix_c)[1:2]...)
+        #    out[I1] = itp(f(SVector{ndims(data)+1, T}(Tuple(I1)..., 1.0), matrix_c)[1:2]...)
             #print(eltype(out[I1]))
-        end
+        #end
+
+        out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)));
         
         return out
     end
 
+    function interpolated(matrix_c::SMatrix, out::AbstractArray)
+
+        out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)));
+        
+        #return out
+    end
+
     function interpolated(p::AbstractVector{T}) where T     
+
         # init a new array for the output
-        out = similar(data)
+        out = data
 
         x_cen, y_cen = (size(data) .÷ 2.0 .+1)
         # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
@@ -154,6 +172,38 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
 
         return out
     end
+
+    
+    function interpolated(p::AbstractVector{T}, out::AbstractArray) where T     
+
+        x_cen, y_cen = (size(data) .÷ 2.0 .+1)
+        # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
+
+        # creating the matrices of rotation, shear, scale, and shift
+        rot_mat =  @SMatrix [cos(p[7])  -1.0*sin(p[7]) 0.0; sin(p[7])  cos(p[7]) 0.0; 0.0 0.0 1.0];
+        shear_mat = @SMatrix [1.0 p[5] 0.0; p[6] 1.0 0.0; 0.0 0.0 1.0];
+        scale_mat = @SMatrix [1/p[3] 0.0 0.0; 0.0 1/p[4] 0.0; 0.0 0.0 1.0];
+        shift_mat = @SMatrix [1.0 0.0 -1*p[1]; 0.0 1.0 -1*p[2]; 0.0 0.0 1.0];
+        t_to_origin = @SMatrix [1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
+        t_to_center = @SMatrix [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
+        # t_orig_upsampled = @SMatrix [1.0 0.0 -1.0*x_cen_up; 0.0 1.0 -1.0*y_cen_up; 0.0 0.0 1.0]
+
+        # building the overall transformation matrix
+        # matrix_c = t_to_origin * scale_mat * shear_mat * rot_mat *shift_mat * t_to_center
+        matrix_c = t_to_origin * scale_mat * rot_mat *shift_mat * t_to_center
+
+        out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), f.(add_dim.(CartesianIndices(data)), Ref(matrix_c)));
+    end
+
+    
+    # How to run this function:
+    # f_general((t) -> (t[1]*1.01, t[2]*1.01), out2)
+    function interpolated(coord_transf_func::Function, out::AbstractArray)
+
+        out[CartesianIndices(data)] .= red_dim_apply.(Ref(itp), func_transform.(CartesianIndices(data), Ref(coord_transf_func)));
+        #return out
+    end
+
 
     return interpolated
 end
