@@ -106,99 +106,100 @@ end
 
 
 function main()
-Random.seed!(1234)
-# Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
-    
-# size of the test array to fit
-size_arr = 22
-noise_level = 10.0;
+    Random.seed!(1234)
+    # Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
+        
+    # size of the test array to fit
+    size_arr = 22
+    noise_level = 10.0;
 
-# defining the mean and the varixance of the test normal (Gaussian) distribution
-μ = [0, 0]
-Σ = [size_arr/10  0.0;
-     0.0 size_arr/10]
+    # defining the mean and the varixance of the test normal (Gaussian) distribution
+    μ = [0, 0]
+    Σ = [size_arr/10  0.0;
+        0.0 size_arr/10]
 
-Σ_d = [2  1.5;
-     1.5 2]
+    Σ_d = [2  1.5;
+        1.5 2]
 
-# initializing the multivariate normal distribution
-p = MvNormal(μ, Σ)
-
-
-# this part of the code is to define the sample array based on a 2D normal distribution
-X = -1*size_arr/2.0:1*size_arr/2.0
-Y = -1*size_arr/2.0:1*size_arr/2.0 
-
-z = [pdf(p, [x,y]) for y in Y, x in X]
-
-# @vv z
-
-dtype = Float64
-
-# setting a typical values for the shift (1:2) and scale (3:4)
-true_vals =   dtype.([0.2, -1.2, 1.0, 1.0, 0.0, 0.0, pi/3]) #pi/6]
-#true_vals =   [2.3, -1.2, 0.9, 2.1, 0.1, 0.05, pi/2, 2.0, 3.0]
-
-# normalizing the sample data
-#sample_data = Float32.(z./maximum(z)) 
-sample_data = dtype.(TestImages.shepp_logan(32));
-#sample_data = rand(dtype, (size_arr, size_arr))
-
-#sample_data .+=  rand(dtype, (size(sample_data)...))./noise_level;
-
-x_cen, y_cen = (size(sample_data) .÷ 2.0 .+1)
-
-shear_mat = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0];
-scale_mat = [1/1.2 0.0 0.0; 0.0 1/1.8 0.0; 0.0 0.0 1.0];
-
-t_to_origin = [1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
-t_to_center = [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
-
-# converting the data to function (DataToFunctions.get_function)
-f_affine = get_function_affine(sample_data);#; super_sampling=1);#, extrapolation_bc=0.0);
-
-ang = rand((0.0:0.1:pi))
-rot_mat =  [cos(ang)  -1.0*sin(ang) 0.0; sin(ang)  cos(ang) 0.0; 0.0 0.0 1.0];
-
-matrix_c = dtype.(t_to_origin * scale_mat * shear_mat * rot_mat * t_to_center )
-
-# f_d = get_function_loop(sample_data_d; super_sampling=1);#, extrapolation_bc=0.0);
-
-# adding some scaled random noise to the fitting data
-# fitting_data = f_general(SMatrix{3,3}(matrix_c)); #.+ rand(size(sample_data)...)./100.0;
-fitting_data = f_affine(true_vals) .+ dtype.(rand(size(sample_data)...))./5.0;
+    # initializing the multivariate normal distribution
+    p = MvNormal(μ, Σ)
 
 
-plot(heatmap(sample_data, aspect_ratio=1), heatmap(fitting_data, aspect_ratio=1))
+    # this part of the code is to define the sample array based on a 2D normal distribution
+    X = -1*size_arr/2.0:1*size_arr/2.0
+    Y = -1*size_arr/2.0:1*size_arr/2.0 
+
+    z = [pdf(p, [x,y]) for y in Y, x in X]
+
+    # @vv z
+
+    dtype = Float64
+
+    # setting a typical values for the shift (1:2) and scale (3:4)
+    true_vals =   dtype.([0.2, -1.2, 1.0, 1.0, 0.0, 0.0, pi/3]) #pi/6]
+    #true_vals =   [2.3, -1.2, 0.9, 2.1, 0.1, 0.05, pi/2, 2.0, 3.0]
+
+    # normalizing the sample data
+    #sample_data = Float32.(z./maximum(z)) 
+    sample_data = dtype.(TestImages.shepp_logan(32));
+    #sample_data = rand(dtype, (size_arr, size_arr))
+
+    #sample_data .+=  rand(dtype, (size(sample_data)...))./noise_level;
+
+    x_cen, y_cen = (size(sample_data) .÷ 2.0 .+1)
+
+    shear_mat = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0];
+    scale_mat = [1/1.2 0.0 0.0; 0.0 1/1.8 0.0; 0.0 0.0 1.0];
+
+    t_to_origin = [1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
+    t_to_center = [1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
+
+    # converting the data to function (DataToFunctions.get_function)
+    f_affine = get_function_affine(sample_data);#; super_sampling=1);#, extrapolation_bc=0.0);
+
+    ang = rand((0.0:0.1:pi))
+    rot_mat =  [cos(ang)  -1.0*sin(ang) 0.0; sin(ang)  cos(ang) 0.0; 0.0 0.0 1.0];
+
+    matrix_c = dtype.(t_to_origin * scale_mat * shear_mat * rot_mat * t_to_center )
+
+    # f_d = get_function_loop(sample_data_d; super_sampling=1);#, extrapolation_bc=0.0);
+
+    f2 = similar(sample_data)
+    # adding some scaled random noise to the fitting data
+    # fitting_data = f_general(SMatrix{3,3}(matrix_c)); #.+ rand(size(sample_data)...)./100.0;
+    f_affine(true_vals, f2); #.+ dtype.(rand(size(sample_data)...))./5.0;
 
 
-# defining the loss function based on the gaussian noise
-loss(p1::AbstractVector) = sum(abs2.(f_affine(p1::AbstractVector) .- fitting_data))
-# loss(x) = loss(x::AbstractVector{T} where T)
-
-# loss(p3) = loss([p3[1], p3[2], p3[3], p3[4], p3[5], p3[6], p3[7]])
+    plot(heatmap(sample_data, aspect_ratio=1), heatmap(fitting_data, aspect_ratio=1))
 
 
-# perform the main fit to the fitting data by minimizing the loss function
-@time output, res = perform_fit_general(loss, fitting_data)
+    # defining the loss function based on the gaussian noise
+    loss(p1::AbstractVector) = sum(abs2.(f_affine(p1::AbstractVector) .- fitting_data))
+    # loss(x) = loss(x::AbstractVector{T} where T)
+
+    # loss(p3) = loss([p3[1], p3[2], p3[3], p3[4], p3[5], p3[6], p3[7]])
 
 
-# plotting the output of the fitting pocedure for further illustration
-    begin
-        p00 = heatmap(sample_data, aspect_ratio=1.0, clim=(0.0, 1.0), title="Sample data", legend = :none);
-        p01 = heatmap(fitting_data, aspect_ratio=1.0, clim=(0.0,1.0), title="Fitting data", legend = :none);
-        p02 = heatmap(f_affine(output), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
-        p03 = heatmap(fitting_data .- f_affine(output), aspect_ratio=1.0, clim=(0.0, 1.0), title="discrepancy", legend = :none);
+    # perform the main fit to the fitting data by minimizing the loss function
+    @time output, res = perform_fit_general(loss, fitting_data)
 
-        plot(p00, p01, p02, p03, layout=@layout([A B C D]), 
-            framestyle=nothing, showaxis=false, 
-            xticks=false, yticks=false, 
-            size=(1200, 500),  
-            plot_title="True vals: $(true_vals)
-    fitted vals: $(output)",
-            plot_titlevspan=0.2
-        )
-    end
+
+    # plotting the output of the fitting pocedure for further illustration
+        begin
+            p00 = heatmap(sample_data, aspect_ratio=1.0, clim=(0.0, 1.0), title="Sample data", legend = :none);
+            p01 = heatmap(fitting_data, aspect_ratio=1.0, clim=(0.0,1.0), title="Fitting data", legend = :none);
+            p02 = heatmap(f_affine(output), aspect_ratio=1.0, clim=(0.0,1.0), title="estimated fit", legend = :none);
+            p03 = heatmap(fitting_data .- f_affine(output), aspect_ratio=1.0, clim=(0.0, 1.0), title="discrepancy", legend = :none);
+
+            plot(p00, p01, p02, p03, layout=@layout([A B C D]), 
+                framestyle=nothing, showaxis=false, 
+                xticks=false, yticks=false, 
+                size=(1200, 500),  
+                plot_title="True vals: $(true_vals)
+        fitted vals: $(output)",
+                plot_titlevspan=0.2
+            )
+        end
 
 end
 

@@ -64,11 +64,11 @@ end
     return @view svec[1:S-1]
 end
 
-@inline function red_dim_apply(fct::AbstractArray{R}, svec::SVector{S,T})::R where {S,T, R}
+@inline function red_dim_apply(fct, svec::SVector{S,T})::R where {S,T, R}
     return fct((@view svec[1:S-1])...)
 end
 
-@inline function idx_apply(fct::AbstractArray{R}, svec::SVector{S,T})::R where {S,T, R}
+@inline function idx_apply(fct, svec::SVector{S,T}) where {S,T}
     return fct(svec...)
 end
 
