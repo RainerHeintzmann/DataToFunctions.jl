@@ -3,8 +3,7 @@ using Interpolations
 using FourierTools
 using StaticArrays
 
-export get_function, get_function_affine, add_dim, red_dim_apply, red_dim, mat_mul, func_transform
-export extrapolate, interpolate
+export get_function, get_function_affine, get_function_general
 
 """
     get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -64,7 +63,7 @@ end
     return @view svec[1:S-1]
 end
 
-@inline function red_dim_apply(fct, svec::SVector{S,T})::R where {S,T, R}
+@inline function red_dim_apply(fct, svec::SVector{S,T}) where {S,T}
     return fct((@view svec[1:S-1])...)
 end
 
@@ -100,7 +99,7 @@ itp: The interpolation object to use
 ```
 """
 function apply_transform_tuple!(coord_transf_func::Function, data, itp, out)
-    out .= red_dim_apply.(Ref(itp), func_transform.(CartesianIndices(data), Ref(coord_transf_func)));
+    out .= idx_apply.(Ref(itp), func_transform.(CartesianIndices(data), Ref(coord_transf_func)));
 end
 
 """
@@ -213,6 +212,20 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
     return interpolated
 end
 
+
+function get_function_general(data::AbstractArray{T}; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
+    #new_size = super_sampling.*size(data)
+    #upsampled = fftshift(resample(ifftshift(data), new_size))
+
+    # building the extraplation + interpolation object
+    itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
+
+    function interpolated(transf_fcn::Function, out = similar(data))      
+        apply_transform_tuple!(transf_fcn, data, itp, out);
+        return out;
+    end
+    
+end
 
 
 end # module DataToFunctions
