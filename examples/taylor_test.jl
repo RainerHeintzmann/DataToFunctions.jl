@@ -1,49 +1,26 @@
-function get_polynomial(::Val{numvars}, ::Val{0}) where {numvars}
-    # @info "Creating polynomials of order 0"
-    return (t, c) -> begin 
-        # println("c: $(c) $(length(c))");
-        c[1]
-    end
-end
-
-function get_polynomial(::Val{numvars}, ::Val{N}) where {numvars, N}
-    # @info "Creating polynomials with $(numvars) variables of order , $(N). Required constants: $((numvars+1)^N)"
-    p1 = get_polynomial(Val(numvars), Val(N-1)); # is reused multiple times
-    p2(t, c) = begin
-        s = p1(t, c[1+length(c)÷(numvars+1):(2)*length(c)÷(numvars+1)]) * t[1]  # int devision needed for type stability!
-        # s = 0
-        for n in 2:numvars
-            s += p1(t, c[1+n*length(c)÷(numvars+1):(n+1)*length(c)÷(numvars+1)]) * t[n]  # int devision needed for type stability!
-        end
-        return s
-    end
-    function p3(t, c)
-        # println("N: $(N), c: $(c) $(length(c))");
-        p1(t, c[1:length(c)÷(numvars+1)]) + p2(t,c)   # int devision needed for type stability!
-    end
-
-    return p3
-end
+using DataToFunctions
+using TestImages
 
 function main()
-    (2+1)^3
-    p = get_polynomial(Val(2), Val(3))  # 27 indices required
-    @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27)));
-    # does allocate
 
-    (2+1)^2
-    p = get_polynomial(Val(2), Val(2))  # 3 indices required
-    @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2.1,3.1,4,5,6,7,8,9)));
-    # essentially allocation-free
+    obj = Float32.(TestImages.shepp_logan(320));
 
-    (2+1)^1
-    p = get_polynomial(Val(1), Val(1))  # 3 indices required
-    @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2.1,3.1)));
-    # essentially allocation-free
-    p((100,),((1.1,2.2, 3.3)))
+    f = get_function_poly(obj,1)
+    c0 = (-10.5, 1.1, 0.1, -20.2, 0.1, 1.1)
+    @time warped = f(c0); # 1.7 ms
 
-    p = get_polynomial(Val(1), Val(0))  # 27 indices required
-    @time p.(Tuple.(CartesianIndices((100,100))),Ref((1.1)));
-    # essentially allocation-free
+    fa = get_function_affine(obj); #.+ dtype.(rand(size(sample_data)...))./5.0;
+    ca = [1.5, 1.1, 0.6, 1.2, 0.1, 1.1, 2.0]
+    @time warpeda = fa(ca); # 1.7 ms
+
+    # non-linear deformation warp
+    f2 = get_function_poly(obj, 2); #.+ dtype.(rand(size(sample_data)...))./5.0;
+    c02 = (-150.5, 1.1, 0.1, 0.001, 0.001 ,0.001, 0.001, 0.001, 0.001,
+           -110.2, 0.1, 1.5, 0.001, 0.0015,-0.001, 0.0014,0.001,-0.001)
+    @time warped2 = f2(c02); # 3.3 ms
+    @time warped2 .= f2(c02);
+    @time f2(c02, warped2);  # 3.0 ms
+    # @vt obj warpeda warped warped2
+
 end
 
