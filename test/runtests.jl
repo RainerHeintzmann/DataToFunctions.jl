@@ -1,32 +1,36 @@
 using Test
-# using Zygote
+using Zygote
 using DataToFunctions
 
-@testset "get_function" begin
+include("Aqua.jl")
+
+@testset "get_function_affine" begin
     data = rand(40,41)
-    for supersamp = 1:5
-        f = get_function(data; super_sampling=supersamp);
-        @test f((0.0,0.0),(1.0,1.0)) ≈ data
-    end
+    f = get_function_affine(data);
+    @test f([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]) ≈ data
+    
+end
+
+@testset "loss" begin
+    data = rand(11,10)
+    f = get_function_affine(data; super_sampling=2);
+    loss(p) = sum(abs2.(f(p) .- data))
+    @test loss([0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]) < 1e-20
+    @test loss([0.001, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]) > 1e-20
+    @test loss([0.0, 0.0, 1.001, 1.0, 0.0, 0.0, 0.0]) > 1e-20
 end
 
 @testset "gradient" begin
     data = rand(11,10)
-    f = get_function(data; super_sampling=2);
-    loss(p,z) = sum(abs2.(f(p, z) .- data))
-    @test loss((0.0,0.0),(1.0,1.0)) < 1e-20
-    @test loss((0.0,0.001),(1.0,1.0)) > 1e-20
-    @test loss((0.0,0.0),(1.0001,1.0)) > 1e-20
-
+    f = get_function_affine(data; super_sampling=2);
+    loss(p) = sum(abs2.(f(p) .- data))
+    st_vals = [0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0]
     # throws an error...
-    # Zygote.gradient(loss, (0.0,0.0), (1.0,1.0))
+    @test Zygote.gradient(loss, st_vals)[1] ≈ zeros(7)
 end
 
 @testset "keep center" begin
     data = ones(5,4); data[3,3] = 5.0;
-    f = get_function(data; super_sampling=5);
-    @test f((0.0,0.0),(2.0,2.0))[3,3] ≈ 5.0
-
-    # throws an error...
-    # Zygote.gradient(loss, (0.0,0.0), (1.0,1.0))
+    f = get_function(data);
+    @test f([0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0])[3,3] ≈ 5.0
 end

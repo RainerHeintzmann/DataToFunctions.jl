@@ -19,7 +19,7 @@ function get_polynomial(::Val{numvars}, ::Val{N}) where {numvars, N}
         end
         return s
     end
-    function p3(t, c)::Float32
+    function p3(t, c)
         # println("N: $(N), c: $(c) $(length(c))");
         p1(t, c[1:length(c)÷(numvars+1)]) + p2(t,c)   # int devision needed for type stability!
     end
@@ -37,7 +37,7 @@ function get_multi_poly(::Val{numvars}, ::Val{N}) where {numvars, N}
     @info "Creating polynomials with $(numvars) variables of order , $(N). Required constants: $(numvars*((numvars+1)^N))"
     p = get_polynomial(Val(numvars), Val(N))
     # return p
-    function mpol(t,c)::NTuple{numvars, Float32}
+    function mpol(t,c)#::NTuple{numvars, T} where T
         return ntuple(n->p(t, split_tuple(c,Val(numvars))[n]), Val(numvars))
 
         # println("N: $(N), c: $(c) $(length(c))");
