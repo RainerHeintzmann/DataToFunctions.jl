@@ -129,30 +129,25 @@ function test_poly_allocations()
 
     cids = Tuple.(CartesianIndices((200,200)))
     # cfds = map((t)->Tuple(Float32.([t...])), cids) 
-    cs = Tuple(Float32.([1.1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]))
+    cs = Tuple(Float32.(collect(1:27)))
     res = zeros(Float32, 200,200)
-    @time res .= polynomial.(Ref(Val(2)), cids, Ref(cs));
-    # 0.184371 seconds (2.52 M allocations: 75.226 MiB, 2.59% gc time)
-    # does allocate 95 Mb !
+    get_num_poly_vars(Val(2), Val(2)) # 6 indices required
+    @time res .= polynomial.(Ref(Val(2)), cids, Ref(cs)); # 2 orders, two variables
+    # 0.000122 seconds (3 allocations: 168 bytes)
 
-    @time polynomial.(Ref(Val(0)), cfds, Ref(cs));
+    get_num_poly_vars(Val(3), Val(2)) # 10 indices required
+    @time res .= polynomial.(Ref(Val(3)), cids, Ref(cs)); # 2 orders, two variables
+    # 0.003710 seconds (240.00 k allocations: 13.428 MiB)
 
-    p = get_polynomial(Val(3), Val(2))  # 10 indices required
-    get_num_poly_vars(Val(3), Val(2))
-    @time p.(Tuple.(CartesianIndices((100,100,10))),Ref((1.1,2.1,3.1,4,5,6,7,8,9,10,11,12,13,14,15,16)));
-    # does allocate 256 Mb !
+    get_num_poly_vars(Val(4), Val(2)) # 15 indices required
+    @time res .= polynomial.(Ref(Val(4)), cids, Ref(cs)); # 2 orders, two variables
+    # 0.008149 seconds (480.00 k allocations: 26.856 MiB)
 
-    p = get_polynomial(Val(2), Val(2))  # 9 indices required
-    @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2.1,3.1,4,5,6,7,8,9)));
-    # essentially allocation-free
+    get_num_poly_vars(Val(5), Val(2)) # 21 indices required
+    @time res .= polynomial.(Ref(Val(5)), cids, Ref(cs)); # 2 orders, two variables
+    #0.014299 seconds (1.08 M allocations: 60.425 MiB, 23.18% gc time)
 
-    p = get_polynomial(Val(2), Val(1))  # 3 indices required
-    @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2.1,3.1)));
-    # essentially allocation-free
-    # p((100,100),((1.1,2.2, 3.3)))
-
-    p = get_polynomial(Val(1), Val(0))  # 27 indices required
-    @time p.(Tuple.(CartesianIndices((100,100))),Ref((1.1)));
-    # essentially allocation-free
+    @time polynomial.(Ref(Val(0)), cids, Ref(cs));
+    # 0.000076 seconds (5 allocations: 156.461 KiB)
 
 end
