@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.43
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -87,7 +87,7 @@ h = get_function_poly(data, 1)
 @bind c6 Slider(-2f0:0.05f0:2f0, default=1)
 
 # ╔═╡ 74228a9d-6cc2-4aaf-97da-67f32670341e
-Gray.(h((c1,c2,c3,c4,c5,c6,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+Gray.(h((0f0, 0f0, 1.0f0, 0f0, 1.00f0, 0f0)))#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
 
 # ╔═╡ 687a198b-9020-4959-8e27-fd0896d4b1fc
 maximum(h((c1,c2,c3,c4,c5,c6,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
