@@ -4,7 +4,7 @@ export polynomial
 # using Unrolled
 
 """
-    get_polynomial(::Val{numvars}, ::Val{0}) where {numvars, N}
+    polynomial(::Val{0}, ::T1,  c::T2, ::Val{cstart}=Val(1), ::Val{numvars}=Val(1)) where {NV, TS, T1 <: NTuple{NV, Integer}, T2 <: NTuple{TS, Float32}, cstart, numvars}
 
 Create a polynomial of order 0 with numvars variables.
 
@@ -97,10 +97,10 @@ end
 function get_multi_poly(::Val{numvars}, ::Val{N}) where {numvars, N}
     # cs_per_comp = ((numvars+1)^N)
     @info "Creating polynomials with $(numvars) variables of order , $(N). Required constants: $(numvars*((numvars+1)^N))"
-    p = get_polynomial(Val(numvars), Val(N))
+    p = (t,c) -> polynomial(Val(N), Tuple.(t), c)
     # return p
     function mpol(t,c)#::NTuple{numvars, T} where T
-        return ntuple(n->p(t, split_tuple(c,Val(numvars))[n]), Val(numvars))
+        return ntuple(n->p(t, split_tuple(c, Val(numvars))[n]), Val(numvars))
 
         # println("N: $(N), c: $(c) $(length(c))");
         # return Tuple(p(t, c[1+(n-1)*((numvars+1)^N):n*((numvars+1)^N)]) for n=1:numvars)
