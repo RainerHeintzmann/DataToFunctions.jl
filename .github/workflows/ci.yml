@@ -3,9 +3,11 @@ on:
   pull_request:
     branches:
       - master
+      - develop
   push:
     branches:
       - master
+      - develop
     tags: '*'
 concurrency:
   # Skip intermediate builds: always.
