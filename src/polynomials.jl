@@ -1,4 +1,4 @@
-export get_polynomial, get_multi_poly, get_num_poly_vars, get_num_multipoly_vars
+export get_multi_poly, get_num_poly_vars, get_num_multipoly_vars
 export polynomial
 
 # using Unrolled
