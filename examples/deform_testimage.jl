@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.42
+# v0.19.43
 
 using Markdown
 using InteractiveUtils
@@ -72,25 +72,25 @@ h = get_function_poly(data, 1)
 @bind c1 Slider(-1f0:0.05f0:1f0, default=0)
 
 # ╔═╡ 7fb3ef17-d0a0-4919-b4d5-8e66b4a0fe60
-@bind c2 Slider(-2f0:0.05f0:2f0, default=1)
+@bind c2 Slider(0.2f0:0.05f0:2f0, default=1)
 
 # ╔═╡ 200bab4d-b444-47c6-b4d8-d5d3c450e5f9
-@bind c3 Slider(-2f0:0.05f0:2f0, default=1)
+@bind c3 Slider(-2f0:0.05f0:2f0, default=0)
 
 # ╔═╡ f17402a6-ba63-44e9-8e22-da027b07ffc3
-@bind c4 Slider(-2f0:0.05f0:2f0, default=1)
+@bind c4 Slider(-20f0:0.05f0:20f0, default=0)
 
 # ╔═╡ d913278e-1658-4bee-9e12-ad778e530c1b
-@bind c5 Slider(-2f0:0.05f0:2f0, default=1)
+@bind c5 Slider(-2f0:0.05f0:2f0, default=0)
 
 # ╔═╡ cee301da-2b3e-432f-9551-0fe83bf6c8ec
-@bind c6 Slider(-2f0:0.05f0:2f0, default=1)
+@bind c6 Slider(0.2f0:0.05f0:2f0, default=1)
 
 # ╔═╡ 74228a9d-6cc2-4aaf-97da-67f32670341e
-Gray.(h((0f0, 0f0, 1.0f0, 0f0, 1.00f0, 0f0)))#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+Gray.(h((c1, c2, c3, c4, c5, c6)))#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
 
 # ╔═╡ 687a198b-9020-4959-8e27-fd0896d4b1fc
-maximum(h((c1,c2,c3,c4,c5,c6,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+maximum(h((c1,c2,c3,c4,c5,c6)))
 
 # ╔═╡ Cell order:
 # ╠═28975586-853e-4e19-b9eb-65c41fa61a43
