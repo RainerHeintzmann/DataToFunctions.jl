@@ -27,10 +27,10 @@ using DataToFunctions, ImageShow, TestImages, PlutoUI, Images
 # Pkg.add("PlutoUI")
 
 # ╔═╡ 5ac1123d-5df3-4c9d-aff1-ffe91d931497
-data = testimage("resolution_test_512")
+data = Float32.(testimage("resolution_test_512"))
 
 # ╔═╡ b0c8d15e-1bd3-4e66-b2b9-57885636eb48
-
+simshow(data)
 
 # ╔═╡ 2fce0208-732f-4259-a47d-7f78921bfd87
 f = get_function(data, super_sampling=1)
@@ -69,7 +69,7 @@ g()
 h = get_function_poly(data, 1)
 
 # ╔═╡ 473d635e-d06d-4cdb-991f-22c82a06b491
-@bind c1 Slider(-1f0:0.05f0:1f0, default=0)
+@bind c1 Slider(-20f0:0.05f0:20f0, default=0)
 
 # ╔═╡ 7fb3ef17-d0a0-4919-b4d5-8e66b4a0fe60
 @bind c2 Slider(0.2f0:0.05f0:2f0, default=1)
@@ -87,10 +87,13 @@ h = get_function_poly(data, 1)
 @bind c6 Slider(0.2f0:0.05f0:2f0, default=1)
 
 # ╔═╡ 74228a9d-6cc2-4aaf-97da-67f32670341e
-Gray.(h((c1, c2, c3, c4, c5, c6)))#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+simshow(h((c1, c2, c3, c4, c5, c6)), cmap=:turbo)#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
 
 # ╔═╡ 687a198b-9020-4959-8e27-fd0896d4b1fc
 maximum(h((c1,c2,c3,c4,c5,c6)))
+
+# ╔═╡ 6584aacc-440e-457b-bf52-83f8db40c999
+h((c1,c2,c3,c4,c5,c6))
 
 # ╔═╡ Cell order:
 # ╠═28975586-853e-4e19-b9eb-65c41fa61a43
@@ -118,3 +121,4 @@ maximum(h((c1,c2,c3,c4,c5,c6)))
 # ╠═cee301da-2b3e-432f-9551-0fe83bf6c8ec
 # ╠═74228a9d-6cc2-4aaf-97da-67f32670341e
 # ╠═687a198b-9020-4959-8e27-fd0896d4b1fc
+# ╠═6584aacc-440e-457b-bf52-83f8db40c999
