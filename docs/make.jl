@@ -20,4 +20,4 @@ pages = Any[
 # compile to HTML:
 makedocs(; sitename="DataToFunctions.jl", pages, modules = [DataToFunctions], warnonly = true)
 
-deploydocs(repo = "github.com/RainerHeintzmann/DataToFunctions.jl.git")
+deploydocs(repo = "github.com/RainerHeintzmann/DataToFunctions.jl.git", devbranch = "develop")
