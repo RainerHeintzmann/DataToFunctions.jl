@@ -1,8 +1,6 @@
 export get_multi_poly, get_num_poly_vars, get_num_multipoly_vars
 export polynomial
 
-# using Unrolled
-
 """
     polynomial(::Val{0}, ::T1,  c::T2, ::Val{cstart}=Val(1), ::Val{numvars}=Val(1)) where {NV, TS, T1 <: NTuple{NV, Integer}, T2 <: NTuple{TS, Float32}, cstart, numvars}
 
@@ -41,45 +39,67 @@ Example:
   0.000089 seconds (3 allocations: 184 bytes)
 ```
 """
-function polynomial(::Val{N}, t::T1, c::T2, ::Val{cstart}=Val(1), ::Val{numvars}=Val(length(t)))::Float32 where {N, NV, TS, T1 <: NTuple{NV, Integer}, T2 <: NTuple{TS, Float32}, cstart, numvars} 
-    c_start = cstart
-    res = c[c_start]
-    c_start += 1
-    # iterate through the polynomial variables: (but this leads to dynamic memory allocation!)
-    # for n = 1:numvars # eachindex(t) # 1:length(t) # eachindex(t) # 1:length(t)
-    #     # c_end = c_start + get_num_poly_vars(Val(n), Val(N-1)) - 1
-    #     res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
-    #     c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
-    # end
-    # # does not work:
-    # @macroexpand Base.Cartesian.@nexprs 4 n -> begin
-    #     if (numvars >= n)
-    #     res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
-    #     c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
-    #     end
-    # end
+@generated function polynomial(::Val{N}, t::T1, c::T2, ::Val{cstart}=Val(1), ::Val{numvars}=Val(length(t)))::Float32 where {N, NV, TS, T1 <: NTuple{NV, Integer}, T2 <: NTuple{TS, Float32}, cstart, numvars} 
+    quote
+        c_start = cstart
+        res = c[c_start]
+        c_start += 1
+        # iterate through the polynomial variables: (but this leads to dynamic memory allocation!)
+        # for n = 1:numvars # eachindex(t) # 1:length(t) # eachindex(t) # 1:length(t)
+        #     # c_end = c_start + get_num_poly_vars(Val(n), Val(N-1)) - 1
+        #     res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
+        #     c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
+        # end
+        # # does not work:
+        # @macroexpand Base.Cartesian.@nexprs 4 n -> begin
+        #     if (numvars >= n)
+        #     res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
+        #     c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
+        #     end
+        # end
 
-    # this simply unrolls the loop by hand (up to 4D input variables):
-    if numvars >= 1
-        res += t[1] * polynomial(Val(N-1), t, c, Val(c_start), Val(1)) 
-        c_start += get_num_poly_vars(Val(1), Val(N-1)) # c_end + 1
+        # @generated function myvarsum(t, c, res, c_start, ::Val{numvars}) where {N}
+        #     quote
+        #         c_start = cstart
+        #         res = c[c_start]
+        #         c_start += 1
+        #         Base.Cartesian.@nexprs $N i A n -> begin
+        #             res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
+        #             c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
+        #         end
+        #         res, c_start
+        #     end
+        # end
+
+        Base.Cartesian.@nexprs $numvars n -> begin
+            res += t[n] * polynomial(Val(N-1), t, c, Val(c_start), Val(n)) 
+            c_start += get_num_poly_vars(Val(n), Val(N-1)) # c_end + 1
+        end
+        # if numvars > 5
+        #     error("Only up to 5 dimensions are currently supported for polynomials")
+        # end
+        # this simply unrolls the loop by hand (up to 4D input variables):
+        # if numvars >= 1
+        #     res += t[1] * polynomial(Val(N-1), t, c, Val(c_start), Val(1)) 
+        #     c_start += get_num_poly_vars(Val(1), Val(N-1)) # c_end + 1
+        # end
+        # if numvars >= 2
+        #     res += t[2] * polynomial(Val(N-1), t, c, Val(c_start), Val(2)) 
+        #     c_start += get_num_poly_vars(Val(2), Val(N-1)) # c_end + 1
+        # end
+        # if numvars >= 3
+        #     res += t[3] * polynomial(Val(N-1), t, c, Val(c_start), Val(3)) 
+        #     c_start += get_num_poly_vars(Val(3), Val(N-1)) # c_end + 1
+        # end
+        # if numvars >= 4
+        #     res += t[4] * polynomial(Val(N-1), t, c, Val(c_start), Val(4)) 
+        #     c_start += get_num_poly_vars(Val(4), Val(N-1)) # c_end + 1
+        # end
+        # if numvars >= 5
+        #     error("Only up to 4 dimensions are currently supported for polynomials")
+        # end
+        return res
     end
-    if numvars >= 2
-        res += t[2] * polynomial(Val(N-1), t, c, Val(c_start), Val(2)) 
-        c_start += get_num_poly_vars(Val(2), Val(N-1)) # c_end + 1
-    end
-    if numvars >= 3
-        res += t[3] * polynomial(Val(N-1), t, c, Val(c_start), Val(3)) 
-        c_start += get_num_poly_vars(Val(3), Val(N-1)) # c_end + 1
-    end
-    if numvars >= 4
-        res += t[4] * polynomial(Val(N-1), t, c, Val(c_start), Val(4)) 
-        c_start += get_num_poly_vars(Val(4), Val(N-1)) # c_end + 1
-    end
-    if numvars >= 5
-        error("Only up to 4 dimensions are currently supported for polynomials")
-    end
-    return res
 end
 
 
@@ -125,7 +145,7 @@ function test_poly_allocations()
     # p = get_polynomial(Val(2), Val(3))  
     # @time p.(Tuple.(CartesianIndices((200,200))),Ref((1.1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27)));
 
-    polynomial(Val(2), (2f0, 20f0),  (1f0, 1f0, 1f0, 1f0, 1f0, 1f0)) == 467
+    polynomial(Val(2), (2, 20),  (1f0, 1f0, 1f0, 1f0, 1f0, 1f0)) == 467
 
     cids = Tuple.(CartesianIndices((200,200)))
     # cfds = map((t)->Tuple(Float32.([t...])), cids) 
@@ -136,7 +156,7 @@ function test_poly_allocations()
     # 0.000122 seconds (3 allocations: 168 bytes)
 
     get_num_poly_vars(Val(3), Val(2)) # 10 indices required
-    @time res .= polynomial.(Ref(Val(3)), cids, Ref(cs)); # 2 orders, two variables
+    @time res .= polynomial.(Ref(Val(3)), cids, Ref(cs)); # 3 orders, two variables
     # 0.003710 seconds (240.00 k allocations: 13.428 MiB)
 
     get_num_poly_vars(Val(4), Val(2)) # 15 indices required
