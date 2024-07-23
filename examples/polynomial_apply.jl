@@ -29,25 +29,22 @@ function poly_test(;sz=64, dtype=Float64, n_photons=1000)
     #sample_data = p_psf ./ maximum(p_psf)
 
     # normalizing the sample data
-    sample_data = p_psf ./ maximum(p_psf)
+    sample_data = p_psf ./ maximum(p_psf) * n_photons
     
     #sample_data = make_grid();
-    f_1 = get_function_poly(Float64.(sample_data), 1); # get_function_affine(sample_data);
-    true_vals = dtype[2.1, 1.05, 0.02, 1.5, 0.05, 1.02] # dtype[2.0, 1.0, 1.01, 1.0, 0.0, 0.0, 0.0]
+    f_1 = get_interpolated_function(Float64.(sample_data), PolynomialMode, 1); # get_function_affine(sample_data);
+    true_vals = (1.6, 1.05, 0.1, 1.5, 0.01, 1.02) # dtype[2.0, 1.0, 1.01, 1.0, 0.0, 0.0, 0.0]
     # true_vals = dtype[rand(-4.0:0.001:4.0), rand(-4.0:0.001:4.0), rand(0.5:0.001:1.5),rand(0.5:0.001:1.5), 0.0, 0.0, rand(0.001:0.001:pi/2.001)]
-    dat2 = f_1(Tuple(true_vals))
 
-    p_img = n_photons .* (dat2 ./ maximum(dat2))
-    n_img = dtype.(poisson(Float64.(p_img)))
+    dat2 = f_1(true_vals)
 
-    s_data = Float64.(sample_data .* n_photons)
     #sample_data = dtype.(TestImages.shepp_logan(sz)) 
-    f = get_function_poly(Float64.(s_data), 1);
+    f = get_interpolated_function(Float64.(sample_data), PolynomialMode, 1);
 
 
 
-    loss_m(p1::AbstractVector) = sum(abs2.(f(Tuple(p1)) .- n_img))
-    st_vals = dtype[2.1, 1.01, 0.01, 1.5, 0.01, 0.9] #ones(Float64, 6)./10
+    loss_p(p1::AbstractArray) = (sum(abs2.(f(Tuple(p1)) .- dat2)))
+    st_vals = [2.1, 1.00, 0.00, 1.5, 0.00, 1.0] #ones(Float64, 6)./10
     #st_vals = Float64[1.0, 0, 0, 0, 0, 0, 1.0, 0, 0,  1.0, 0, 0, 1.0, 0, 0, 0, 0, 0]
     # Float64[9.0, 0, 0, 0, 0, 0, 1, 0, 0,  5.0, 0, 0, 1, 0, 0, 0, 0, 0]
     # @vv f(Tuple(st_vals))
@@ -55,11 +52,11 @@ function poly_test(;sz=64, dtype=Float64, n_photons=1000)
 
     
     function g!(G, x)  # (G, x)
-        G .= gradient(loss_m, x)[1]
+        G .= gradient(loss_p, x)[1]
     end
-    od = OnceDifferentiable(loss_m, g!, st_vals)
+    od = OnceDifferentiable(loss_p, g!, st_vals)
     res = optimize(
-        od, 
+        loss_p,
         st_vals,
         #Newton(),
         BFGS(; initial_stepnorm = 1e-2),#; linesearch=LineSearches.BackTracking(order=2)),
@@ -67,7 +64,7 @@ function poly_test(;sz=64, dtype=Float64, n_photons=1000)
         #lower, upper, 
         #init_x,
         #Fminbox(inner_optimizer), 
-        Optim.Options(store_trace = true, extended_trace = true, iterations=5000, g_tol=1e-3), 
+        #Optim.Options(store_trace = true, extended_trace = true, iterations=5000, g_tol=1e-3), 
         autodiff = :forward
     )
 

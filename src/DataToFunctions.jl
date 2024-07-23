@@ -1,7 +1,6 @@
 module DataToFunctions
 
-include("utils.jl")
-include("polynomials.jl")
+include("transformation_types.jl")
 include("transformators.jl")
  
 end # module DataToFunctions

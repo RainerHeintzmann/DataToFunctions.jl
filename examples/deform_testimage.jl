@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.43
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -20,11 +20,14 @@ using Pkg
 # ╔═╡ 0ae2da4f-3f75-47bb-a899-9e89c5c3f17c
 Pkg.activate(".")
 
+# ╔═╡ 4af0c13d-fc42-4fe7-97e6-2248e36b63e2
+Pkg.add("PlutoUI");
+
 # ╔═╡ a2d75cfb-feab-4130-8439-30c543618d04
 using DataToFunctions, ImageShow, TestImages, PlutoUI, Images
 
-# ╔═╡ 4af0c13d-fc42-4fe7-97e6-2248e36b63e2
-# Pkg.add("PlutoUI")
+# ╔═╡ 1c744bec-f085-4812-ab1a-40a32c2ac176
+import PlutoUI: combine
 
 # ╔═╡ 5ac1123d-5df3-4c9d-aff1-ffe91d931497
 data = Float32.(testimage("resolution_test_512"))
@@ -33,7 +36,7 @@ data = Float32.(testimage("resolution_test_512"))
 simshow(data)
 
 # ╔═╡ 2fce0208-732f-4259-a47d-7f78921bfd87
-f = get_function(data, super_sampling=1)
+f = get_interpolated_function(data, AffineMode, super_sampling=1)
 
 # ╔═╡ dd535378-3f2a-4429-914c-8b7608b99706
 @bind shift_x Slider(-100:0.02:100, default=0)
@@ -48,57 +51,68 @@ f = get_function(data, super_sampling=1)
 @bind zoom_y Slider(0.2:0.02:4, default=1)
 
 # ╔═╡ 64b64d3b-092f-4553-916d-f7db1fdfa428
-f((shift_x, shift_y), (1/zoom_x, 1/zoom_y))
+simshow(f((shift_x, shift_y, 1/zoom_x, 1/zoom_y, 0.0, 0.0, 0.0)))
 
 # ╔═╡ c3fe6b25-f4c0-4a80-9d15-9ee30136d43b
-typeof(f((shift_x, shift_y), (1/zoom_x, 1/zoom_y)))
+typeof(f((shift_x, shift_y, 1/zoom_x, 1/zoom_y, 0.0, 0.0, 0.0)))
 
 # ╔═╡ ff143f0d-b070-4220-8fa6-0b5a93a56303
 typeof(data)
 
-# ╔═╡ 1bed34fb-b29a-4042-a493-4835fdb69a9d
-g =DataToFunctions.get_function_affine(data, super_sampling=1)
+# ╔═╡ 6676ba35-3efd-49f5-9819-411ad8f8a95c
+md"""
+# Polynomial transformations
+"""
 
-# ╔═╡ c287fa80-426b-11ef-125e-5fda207e605c
-# ╠═╡ disabled = true
-#=╠═╡
-g()
-  ╠═╡ =#
+# ╔═╡ 13461a95-95ea-4bad-8673-e94e06776254
+md"""
+First order polynomial transformation which is as follows:
+
+``x^{\prime} = c_{1} + c_{2}{x}^{1} + c_{3}{y}^{1}``
+
+``y^{\prime} = c_{4} + c_{5}{x}^{1} + c_{6}{y}^{1}``
+"""
 
 # ╔═╡ 87be45c0-8b2e-4d49-abd1-a274b3c1815e
-h = get_function_poly(data, 1)
+h = get_interpolated_function(data, PolynomialMode, 1);
 
-# ╔═╡ 473d635e-d06d-4cdb-991f-22c82a06b491
-@bind c1 Slider(-20f0:0.05f0:20f0, default=0)
+# ╔═╡ 68f771aa-2cde-41cd-990c-9ec7dc2146a4
+function coeffs_input(coeffs::Vector)
+	
+	return combine() do Child
+		
+		inputs = [
+			md""" $(name): $(
+				Child(name, Slider(-2f0:0.05f0:2f0, default=0, show_value=true))
+			)"""
+			
+			for name in coeffs
+		]
+		
+		md"""
+		#### Transfrorm coefficients
+		$(inputs)
+		"""
+	end
+end;
 
-# ╔═╡ 7fb3ef17-d0a0-4919-b4d5-8e66b4a0fe60
-@bind c2 Slider(0.2f0:0.05f0:2f0, default=1)
-
-# ╔═╡ 200bab4d-b444-47c6-b4d8-d5d3c450e5f9
-@bind c3 Slider(-2f0:0.05f0:2f0, default=0)
-
-# ╔═╡ f17402a6-ba63-44e9-8e22-da027b07ffc3
-@bind c4 Slider(-20f0:0.05f0:20f0, default=0)
-
-# ╔═╡ d913278e-1658-4bee-9e12-ad778e530c1b
-@bind c5 Slider(-2f0:0.05f0:2f0, default=0)
-
-# ╔═╡ cee301da-2b3e-432f-9551-0fe83bf6c8ec
-@bind c6 Slider(0.2f0:0.05f0:2f0, default=1)
+# ╔═╡ 69331d73-75a3-4727-acda-e79779a2bd03
+@bind c coeffs_input(["c1", "c2", "c3", "c4", "c5", "c6"])
 
 # ╔═╡ 74228a9d-6cc2-4aaf-97da-67f32670341e
-simshow(h((c1, c2, c3, c4, c5, c6)), cmap=:turbo)#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+simshow(h((c.c1, c.c2, c.c3, c.c4, c.c5, c.c6)), cmap=:turbo)#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
 
 # ╔═╡ 687a198b-9020-4959-8e27-fd0896d4b1fc
-maximum(h((c1,c2,c3,c4,c5,c6)))
+maximum(h((c.c1,c.c2,c.c3,c.c4,c.c5,c.c6)))
 
 # ╔═╡ 6584aacc-440e-457b-bf52-83f8db40c999
-h((c1,c2,c3,c4,c5,c6))
+h((c.c1,c.c2,c.c3,c.c4,c.c5,c.c6))
 
 # ╔═╡ Cell order:
 # ╠═28975586-853e-4e19-b9eb-65c41fa61a43
 # ╠═0ae2da4f-3f75-47bb-a899-9e89c5c3f17c
 # ╠═4af0c13d-fc42-4fe7-97e6-2248e36b63e2
+# ╠═1c744bec-f085-4812-ab1a-40a32c2ac176
 # ╠═a2d75cfb-feab-4130-8439-30c543618d04
 # ╠═5ac1123d-5df3-4c9d-aff1-ffe91d931497
 # ╠═b0c8d15e-1bd3-4e66-b2b9-57885636eb48
@@ -110,15 +124,11 @@ h((c1,c2,c3,c4,c5,c6))
 # ╠═64b64d3b-092f-4553-916d-f7db1fdfa428
 # ╠═c3fe6b25-f4c0-4a80-9d15-9ee30136d43b
 # ╠═ff143f0d-b070-4220-8fa6-0b5a93a56303
-# ╠═1bed34fb-b29a-4042-a493-4835fdb69a9d
-# ╠═c287fa80-426b-11ef-125e-5fda207e605c
+# ╟─6676ba35-3efd-49f5-9819-411ad8f8a95c
+# ╟─13461a95-95ea-4bad-8673-e94e06776254
 # ╠═87be45c0-8b2e-4d49-abd1-a274b3c1815e
-# ╠═473d635e-d06d-4cdb-991f-22c82a06b491
-# ╠═7fb3ef17-d0a0-4919-b4d5-8e66b4a0fe60
-# ╠═200bab4d-b444-47c6-b4d8-d5d3c450e5f9
-# ╠═f17402a6-ba63-44e9-8e22-da027b07ffc3
-# ╠═d913278e-1658-4bee-9e12-ad778e530c1b
-# ╠═cee301da-2b3e-432f-9551-0fe83bf6c8ec
-# ╠═74228a9d-6cc2-4aaf-97da-67f32670341e
+# ╟─69331d73-75a3-4727-acda-e79779a2bd03
+# ╟─68f771aa-2cde-41cd-990c-9ec7dc2146a4
+# ╟─74228a9d-6cc2-4aaf-97da-67f32670341e
 # ╠═687a198b-9020-4959-8e27-fd0896d4b1fc
 # ╠═6584aacc-440e-457b-bf52-83f8db40c999

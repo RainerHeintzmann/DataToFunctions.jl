@@ -1,10 +1,13 @@
 using Interpolations
 using FourierTools
 using StaticArrays
+using EvalMultiPoly
 
-export get_function, get_function_tuple, get_function_svec, get_function_affine, get_function_poly
+export get_interpolated_function, get_function_tuple, get_function_svec, get_function_affine, get_function_poly
 export add_dim, red_dim_apply, red_dim, mat_mul, func_transform
 export extrapolate, interpolate
+
+export PolynomialMode, AffineMode
 
 """
     get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
@@ -21,7 +24,7 @@ This is useful for fitting with a function which is itself defined by measured d
 
 
 """
-function get_function(data::AbstractArray; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear()))
+function get_function_old(data::AbstractArray; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear()))
     new_size = super_sampling.*size(data)
     upsampled = fftshift(resample(ifftshift(data), new_size))
     # @show upsampled
@@ -177,7 +180,7 @@ function apply_transform(coord_transf_func::Function, data::AbstractArray{T}, it
         out[it] = idx_apply(itp, coord_transf_func(it))
     end
     """
-    return map((it) -> idx_apply(itp, coord_transf_func(it)), (CartesianIndices(data)))
+    return map((it) -> idx_apply(itp, coord_transf_func(it)), Tuple.(CartesianIndices(data)))
     # out .= idx_apply.(Ref(itp), coord_transf_func.(CartesianIndices(data)));
     # return idx_apply.(Ref(itp), coord_transf_func.(CartesianIndices(data)));
 end
@@ -311,7 +314,26 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         matrix_c = t_to_origin * scale_mat * rot_mat * shear_mat *shift_mat * t_to_center
 
         return apply_transform_affine(matrix_c, data, itp) #, out); # do not call interolated here for type stability reasons
-        #return out;
+    end
+
+    
+    function interpolated(p::NTuple{N, T}) where {N, T} #, out = similar(data)) where T1 
+        x_cen, y_cen = (size(data) .÷ 2.0 .+1)
+        # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
+
+        # creating the matrices of rotation, shear, scale, and shift
+        rot_mat =  @SMatrix T[cos(p[7])  -1.0*sin(p[7]) 0.0; sin(p[7])  cos(p[7]) 0.0; 0.0 0.0 1.0];
+        shear_mat = @SMatrix T[1.0 p[5] 0.0; p[6] 1.0 0.0; 0.0 0.0 1.0];
+        scale_mat = @SMatrix T[1/p[3] 0.0 0.0; 0.0 1/p[4] 0.0; 0.0 0.0 1.0];
+        shift_mat = @SMatrix T[1.0 0.0 -1*p[1]; 0.0 1.0 -1*p[2]; 0.0 0.0 1.0];
+        t_to_origin = @SMatrix T[1.0 0.0 1*x_cen; 0.0 1.0 y_cen; 0.0 0.0 1.0];
+        t_to_center = @SMatrix T[1.0 0.0 -1.0*x_cen; 0.0 1.0 -1.0*y_cen; 0.0 0.0 1.0];
+        # t_orig_upsampled = SMatrix{3, 3}(T[1.0 0.0 -1.0*x_cen_up; 0.0 1.0 -1.0*y_cen_up; 0.0 0.0 1.0]);
+
+        # building the overall transformation matrix
+        matrix_c = t_to_origin * scale_mat * rot_mat * shear_mat *shift_mat * t_to_center
+
+        return apply_transform_affine(matrix_c, data, itp) #, out); # do not call interolated here for type stability reasons
     end
 
     return interpolated
@@ -338,4 +360,57 @@ The optional argument `out` can be used to store the result of the transformatio
 function get_function_poly(data::AbstractArray{T}, order; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
     pm =  get_multi_poly(Val(ndims(data)), Val(order)) 
     return get_function_tuple(data, pm; super_sampling= super_sampling, extrapolation_bc=extrapolation_bc, interp_type=interp_type);
+end
+
+"""
+    get_interpolated_function(data::AbstractArray, ::Type{AffineMode}; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
+
+returns a function `interpolated(p)` which generates a transformed version of the original data parameterized by transform parameters.
+This is useful for fitting with a function which is itself defined by measured data.
+The returned function supports two ways to be used, with an affine transform matrix `p` as in input or with a vector or tuple `p` of parameters.
+
+# Arguments
+`data`: The data to represent by the function `dat`
+`AffineMode`: The transformation mode to use
+`super_sampling`: The factor by which the data is internally represented as a supersampled version (Fourier-based upsampling, see `FourierTools.resample`)
+`extrapolation_bc`: The extrapolation boundary condition to select for values outside the range. 
+    By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
+`interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
+
+# Returns
+A function `interpolated(p)` which generates a transformed version of the original data parameterized by transform parameters
+"""
+function get_interpolated_function(data::AbstractArray{T, N}, ::Type{AffineMode}; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
+    return get_function_affine(data; super_sampling=super_sampling, extrapolation_bc=extrapolation_bc, interp_type=interp_type)
+end
+
+function get_interpolated_function(data::AbstractArray{T, N}; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
+    @warn "No transformation mode provided. `AffineMode` is used as default"
+    return get_interpolated_function(data, AffineMode; super_sampling=super_sampling, extrapolation_bc=extrapolation_bc, interp_type=interp_type)    
+end
+
+"""
+    get_interpolated_function(data::AbstractArray, ::Type{PolynomialMode}, order=nothing; super_sampling=2, extrapolation_bc=Flat(), interp_type=Interpolations.BSpline(Linear()))
+
+returns a function `interpolated(p)` which generates a transformed version of the original data parameterized by transform parameters.
+This is useful for fitting with a function which is itself defined by measured data.
+The returned function supports polynomial transformations of the data.
+
+# Arguments
+`data`: The data to represent by the function `dat`
+`PolynomialMode`: The transformation mode to use
+`order`: The order of the polynomial to use for the transformation
+`super_sampling`: The factor by which the data is internally represented as a supersampled version (Fourier-based upsampling, see `FourierTools.resample`)
+`extrapolation_bc`: The extrapolation boundary condition to select for values outside the range. 
+    By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
+`interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
+
+# Returns
+A function `interpolated(p)` which generates a transformed version of the original data parameterized by polynomial transform parameters
+"""
+function get_interpolated_function(data::AbstractArray{T, N}, ::Type{PolynomialMode}, order=nothing; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
+    if isnothing(order)
+        error("Providing the order of the transformation polynomial is mandatory for the `PolynomialMode`")
+    end
+    return get_function_poly(data, order; super_sampling=super_sampling, extrapolation_bc=extrapolation_bc, interp_type=interp_type)
 end
