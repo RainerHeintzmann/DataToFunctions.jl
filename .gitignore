@@ -27,3 +27,10 @@ examples/Manifest.toml
 *.mp4
 *.png
 examples/figures/*
+examples/*.tif
+examples/*.ipynb
+*.jpeg
+*.gif
+*.jpg
+*.txt
+*.txt

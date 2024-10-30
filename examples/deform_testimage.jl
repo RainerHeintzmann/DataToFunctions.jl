@@ -21,7 +21,7 @@ using Pkg
 Pkg.activate(".")
 
 # ╔═╡ 4af0c13d-fc42-4fe7-97e6-2248e36b63e2
-Pkg.add("PlutoUI");
+Pkg.add("PlutoUI")
 
 # ╔═╡ a2d75cfb-feab-4130-8439-30c543618d04
 using DataToFunctions, ImageShow, TestImages, PlutoUI, Images
@@ -66,6 +66,8 @@ md"""
 
 # ╔═╡ 13461a95-95ea-4bad-8673-e94e06776254
 md"""
+## First order polynomial
+
 First order polynomial transformation which is as follows:
 
 ``x^{\prime} = c_{1} + c_{2}{x}^{1} + c_{3}{y}^{1}``
@@ -90,7 +92,7 @@ function coeffs_input(coeffs::Vector)
 		]
 		
 		md"""
-		#### Transfrorm coefficients
+		#### Transform coefficients
 		$(inputs)
 		"""
 	end
@@ -108,10 +110,30 @@ maximum(h((c.c1,c.c2,c.c3,c.c4,c.c5,c.c6)))
 # ╔═╡ 6584aacc-440e-457b-bf52-83f8db40c999
 h((c.c1,c.c2,c.c3,c.c4,c.c5,c.c6))
 
+# ╔═╡ 74cf9f27-f559-4fe2-9a30-20cb7cf6fe81
+md"""
+## Second order polynomial
+
+Second order polynomial transformation is as follows:
+
+``x^{\prime} = c_{1} + c_{2}{x}^{1} + c_{3}{x}^{2} + c_{4}{y}^{1} + c_{5}{x}{y} + c_{6}{y}^{2}``
+
+``y^{\prime} = c_{7} + c_{8}{x}^{1} + c_{9}{x}^{2} + c_{10}{y}^{1} + c_{11}{x}{y} + c_{12}{y}^{2}``
+"""
+
+# ╔═╡ 1f440592-9bbb-429c-8ba3-d018f5b354b0
+h2 = get_interpolated_function(data, PolynomialMode, 2);
+
+# ╔═╡ 12f59a6d-4600-4379-b536-f3b4701bdbe4
+@bind c2 coeffs_input(["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"])
+
+# ╔═╡ fd60df55-2a80-48a9-95ec-eeeb1cfe7491
+simshow(h2((c2.c1, c2.c2, c2.c3, c2.c4, c2.c5, c2.c6, c2.c7, c2.c8, c2.c9, c2.c10, c2.c11, c2.c12)), cmap=:turbo)#,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0,0f0)))
+
 # ╔═╡ Cell order:
 # ╠═28975586-853e-4e19-b9eb-65c41fa61a43
 # ╠═0ae2da4f-3f75-47bb-a899-9e89c5c3f17c
-# ╠═4af0c13d-fc42-4fe7-97e6-2248e36b63e2
+# ╟─4af0c13d-fc42-4fe7-97e6-2248e36b63e2
 # ╠═1c744bec-f085-4812-ab1a-40a32c2ac176
 # ╠═a2d75cfb-feab-4130-8439-30c543618d04
 # ╠═5ac1123d-5df3-4c9d-aff1-ffe91d931497
@@ -127,8 +149,12 @@ h((c.c1,c.c2,c.c3,c.c4,c.c5,c.c6))
 # ╟─6676ba35-3efd-49f5-9819-411ad8f8a95c
 # ╟─13461a95-95ea-4bad-8673-e94e06776254
 # ╠═87be45c0-8b2e-4d49-abd1-a274b3c1815e
-# ╟─69331d73-75a3-4727-acda-e79779a2bd03
-# ╟─68f771aa-2cde-41cd-990c-9ec7dc2146a4
-# ╟─74228a9d-6cc2-4aaf-97da-67f32670341e
+# ╠═69331d73-75a3-4727-acda-e79779a2bd03
+# ╠═68f771aa-2cde-41cd-990c-9ec7dc2146a4
+# ╠═74228a9d-6cc2-4aaf-97da-67f32670341e
 # ╠═687a198b-9020-4959-8e27-fd0896d4b1fc
 # ╠═6584aacc-440e-457b-bf52-83f8db40c999
+# ╟─74cf9f27-f559-4fe2-9a30-20cb7cf6fe81
+# ╠═1f440592-9bbb-429c-8ba3-d018f5b354b0
+# ╠═12f59a6d-4600-4379-b536-f3b4701bdbe4
+# ╠═fd60df55-2a80-48a9-95ec-eeeb1cfe7491

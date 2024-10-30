@@ -111,7 +111,7 @@ applies a function to a SVector
 `fct`: The function to apply
 `svec::SVector{S,T}`: A SVector
 """
-@inline function idx_apply(fct, svec::SVector{S,T}) where {S,T}
+@inline function idx_apply(fct, svec::SVector{S,T})::Number where {S,T}
     return fct(svec...)
 end
 
@@ -123,7 +123,7 @@ applies a function to a Tuple
 `fct`: The function to apply
 `tup::NTuple{S,T}`: A Tuple
 """
-@inline function idx_apply(fct, tup::NTuple{S,T}) where {S,T}
+@inline function idx_apply(fct, tup::NTuple{S,T})::Number where {S,T}
     return fct(tup...)
 end
 
@@ -173,15 +173,17 @@ applies a general coordinate transformation function to the indices of an array 
 `data::AbstractArray{T}`: The data to transform
 `itp`: The interpolation object to use
 """
-function apply_transform(coord_transf_func::Function, data::AbstractArray{T}, itp) where {T} #, out::AbstractArray{T}) where {T}
+function apply_transform(coord_transf_func::Function, data::AbstractArray{T, N}, itp) where {T, N} #, out::AbstractArray{T}) where {T}
     # @info "Applying tuple transformation"
     """
     for it in CartesianIndices(data)
         out[it] = idx_apply(itp, coord_transf_func(it))
     end
     """
-    return map((it) -> idx_apply(itp, coord_transf_func(it)), Tuple.(CartesianIndices(data)))
-    # out .= idx_apply.(Ref(itp), coord_transf_func.(CartesianIndices(data)));
+    #res = similar(data);
+    #return map((it) -> idx_apply(itp, coord_transf_func(Tuple(it))), CartesianIndices(data))
+    return idx_apply.(Ref(Interpolations.adapt(gpu_or_cpu(nothing), itp)), coord_transf_func.(Tuple.(CartesianIndices(data))));
+    #return idx_apply.(Ref(itp), coord_transf_func.(Tuple.(CartesianIndices(data))));
     # return idx_apply.(Ref(itp), coord_transf_func.(CartesianIndices(data)));
 end
 
@@ -236,11 +238,12 @@ This is useful for fitting with a function which is itself defined by measured d
 # Example
 
 """
-function get_function_tuple(data::AbstractArray{T}, fct_tup::Function; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
+function get_function_tuple(data::AbstractArray{T, N}, fct_tup::Function; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
     # building the extraplation + interpolation object
     itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
     function interpolated(params)#, out = similar(data))
         fct_tup_noparams(ci) = fct_tup(ci, params)
+        #@show Interpolations.adapt(gpu_or_cpu(1), itp)
         return apply_transform(fct_tup_noparams, data, itp);
     end
     return interpolated
@@ -357,7 +360,7 @@ The optional argument `out` can be used to store the result of the transformatio
     By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
 `interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
 """
-function get_function_poly(data::AbstractArray{T}, order; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
+function get_function_poly(data::AbstractArray{T, N}, order; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
     pm =  get_multi_poly(Val(ndims(data)), Val(order)) 
     return get_function_tuple(data, pm; super_sampling= super_sampling, extrapolation_bc=extrapolation_bc, interp_type=interp_type);
 end
@@ -409,6 +412,7 @@ The returned function supports polynomial transformations of the data.
 A function `interpolated(p)` which generates a transformed version of the original data parameterized by polynomial transform parameters
 """
 function get_interpolated_function(data::AbstractArray{T, N}, ::Type{PolynomialMode}, order=nothing; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where {T, N}
+    #TODO from CuArray to CuArray
     if isnothing(order)
         error("Providing the order of the transformation polynomial is mandatory for the `PolynomialMode`")
     end

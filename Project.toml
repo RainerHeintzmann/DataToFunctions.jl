@@ -7,6 +7,7 @@ version = "0.1.0"
 EvalMultiPoly = "c78649ec-f9ed-405e-be6d-0472f43586aa"
 FourierTools = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
