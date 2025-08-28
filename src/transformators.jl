@@ -175,13 +175,8 @@ applies a general coordinate transformation function to the indices of an array 
 """
 function apply_transform(coord_transf_func::Function, data::AbstractArray{T, N}, itp) where {T, N} #, out::AbstractArray{T}) where {T}
     # @info "Applying tuple transformation"
-    """
-    for it in CartesianIndices(data)
-        out[it] = idx_apply(itp, coord_transf_func(it))
-    end
-    """
-    #res = similar(data);
-    #return map((it) -> idx_apply(itp, coord_transf_func(Tuple(it))), CartesianIndices(data))
+    
+    # return map((it) -> idx_apply(Interpolations.adapt(gpu_or_cpu(nothing), itp), coord_transf_func(Tuple(it))), CartesianIndices(data))
     return idx_apply.(Ref(Interpolations.adapt(gpu_or_cpu(nothing), itp)), coord_transf_func.(Tuple.(CartesianIndices(data))));
     #return idx_apply.(Ref(itp), coord_transf_func.(Tuple.(CartesianIndices(data))));
     # return idx_apply.(Ref(itp), coord_transf_func.(CartesianIndices(data)));
@@ -267,7 +262,7 @@ function get_function_svec(data::AbstractArray{T}, fct_hom::Function; super_samp
     itp = extrapolate(interpolate(data, interp_type), extrapolation_bc);
     function interpolated(params::SVector) #, out = similar(data))
         fct_hom_noparams(c) = fct_hom(c, params)
-        return apply_transform_homogen!(fct_hom_noparams, data, itp)#, out);
+        return apply_transform_homogen(fct_hom_noparams, data, itp)#, out);
         # return out;
     end
     return interpolated
@@ -300,7 +295,7 @@ function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapola
         # return out;
     end
 
-    function interpolated(p::AbstractVector{T}) where {T} #, out = similar(data)) where T1 
+    function interpolated(p::AbstractVector{T1}) where {T1} #, out = similar(data)) where T1 
         x_cen, y_cen = (size(data) .÷ 2.0 .+1)
         # x_cen_up, y_cen_up = (size(upsampled) .÷ 2.0 .+ 1.0)
 

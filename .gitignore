@@ -23,6 +23,8 @@ docs/site/
 # environment.
 Manifest.toml
 examples/Manifest.toml
+examples/*.tiff
+examples/image_registration_2dpolim.jl
 
 *.mp4
 *.png
@@ -34,3 +36,5 @@ examples/*.ipynb
 *.jpg
 *.txt
 *.txt
+.*tiff
+examples/6-4-Rigis.jl
