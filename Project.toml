@@ -11,10 +11,16 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+FourierTools = "0.4"
+Interpolations = "0.15.1, 0.16"
+StaticArrays = "1.9.6, 1.10"
 Aqua = "0.8"
+<<<<<<< HEAD
 FourierTools = "0.4.4"
 Interpolations = "0.15.1, 0.16.2"
 StaticArrays = "1.9.6"
+=======
+>>>>>>> 0f7f69c5355e230f4877e7dfee18647d653e8f57
 Test = "1.9.3"
 Zygote = "0.6.70"
 julia = "1"
