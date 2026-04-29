@@ -282,6 +282,32 @@ The returned function supports two ways to be used, with an affine transform mat
 `extrapolation_bc`: The extrapolation boundary condition to select for values outside the range. 
     By default the value 0.0 is used. Other options are `Flat()`, or `Line()`, See the package `Interpolation` for details.
 `interp_type`: The type of interpolation to use. See the package `Interpolation` for details.
+
+# Example
+
+```julia
+julia> dat1 = reshape(1:16,(4,4))
+4×4 reshape(::UnitRange{Int64}, 4, 4) with eltype Int64:
+ 1  5   9  13
+ 2  6  10  14
+ 3  7  11  15
+ 4  8  12  16
+
+julia> affine_func = get_function_affine(Float32.(dat1));
+
+julia> homogeneous_transform = [1 0 -1; 0 1 1; 0 0 1] # translates by [1,1]
+3×3 Matrix{Int64}:
+ 1  0  -1
+ 0  1   1
+ 0  0   1
+
+julia> affine_func(SMatrix{3,3}(homogeneous_transform))
+4×4 Matrix{Float32}:
+ 0.0   0.0   0.0  0.0
+ 5.0   9.0  13.0  0.0
+ 6.0  10.0  14.0  0.0
+ 7.0  11.0  15.0  0.0
+```
 """
 function get_function_affine(data::AbstractArray{T}; super_sampling=2, extrapolation_bc=zero(eltype(data)), interp_type=Interpolations.BSpline(Linear())) where T
     #new_size = super_sampling.*size(data)
