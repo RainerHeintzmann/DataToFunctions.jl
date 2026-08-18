@@ -81,10 +81,12 @@ jobs:
         run: |
           julia --project=docs/ -e '
             using Pkg
-            Pkg.develop(PackageSpec(
-                url="https://github.com/rainerheintzmann/EvalMultiPoly.jl"
-            ))
-            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.develop([
+                PackageSpec(
+                    url="https://github.com/rainerheintzmann/EvalMultiPoly.jl"
+                ),
+                PackageSpec(path=pwd())
+            ])
             Pkg.instantiate()
           '
 
