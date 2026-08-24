@@ -62,35 +62,36 @@ jobs:
         with:
           file: lcov.info
 
-  # docs:
-  #   name: Documentation
-  #   runs-on: ubuntu-latest
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
 
-  #   permissions:
-  #     contents: write
+    permissions:
+      contents: write
 
-  #   steps:
-  #     - uses: actions/checkout@v6
+    steps:
+      - uses: actions/checkout@v6
 
-  #     - uses: julia-actions/setup-julia@v3
-  #       with:
-  #         version: '1.10'
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.10'
 
-  #     - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v2
 
-  #     - name: Add unregistered dependencies
-  #       run: |
-  #         julia --project=docs/ -e '
-  #           using Pkg
-  #           Pkg.develop([
-  #               PackageSpec(
-  #                   url="https://github.com/rainerheintzmann/EvalMultiPoly.jl"
-  #               ),
-  #               PackageSpec(path=pwd())
-  #           ])
-  #           Pkg.instantiate()
-  #         '
+      - name: Install documentation dependencies
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop([
+                PackageSpec(
+                    url="https://github.com/rainerheintzmann/EvalMultiPoly.jl"
+                ),
+                PackageSpec(path=pwd())
+            ])
+            Pkg.instantiate()
+          '
 
-  #     - uses: julia-actions/julia-docdeploy@releases/v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and deploy documentation
+        uses: julia-actions/julia-docdeploy@releases/v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
