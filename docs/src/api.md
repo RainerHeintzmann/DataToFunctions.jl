@@ -1,20 +1,42 @@
-# API
+# API Reference
+
+This page lists the public transformation interface provided by
+`DataToFunctions.jl`.
+
+## Affine transformations
 
 ```@docs
-get_function
-add_dim
-red_dim
-red_dim_apply
-idx_appy
-mat_mul
-func_transform
-func_transform_tup
-apply_transform
-apply_transform_homogen
-apply_transform_affine
-get_function_tuple
-get_function_svec
-get_function_affine
-get_function_poly
-split_tuple
+DataToFunctions.get_function_affine
+DataToFunctions.get_function_affine_inplace
+```
+
+## Polynomial transformations
+
+```@docs
+DataToFunctions.get_function_poly
+DataToFunctions.get_function_poly_inplace
+```
+
+## User-defined transformations
+
+```@docs
+DataToFunctions.get_function_tuple
+DataToFunctions.get_function_tuple_inplace
+DataToFunctions.get_function_homogen
+DataToFunctions.get_function_homogen_inplace
+```
+
+## Mode-based interface
+
+```@docs
+DataToFunctions.get_interpolated_function
+```
+
+## Transformation modes
+
+If `AffineMode` and `PolynomialMode` have docstrings, they can be included here:
+
+```@docs
+DataToFunctions.AffineMode
+DataToFunctions.PolynomialMode
 ```

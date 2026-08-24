@@ -1,11 +1,10 @@
 module DataToFunctions
 
-using Requires
+# export gpu_or_cpu
 
-export gpu_or_cpu
-
+# deprecated:
 # to include CUDA
-include("requires.jl")
+# include("requires.jl")
 
 #include("datafunction.jl")
 include("transformation_types.jl")
