@@ -1,8 +1,38 @@
 name = "DataToFunctions"
 uuid = "64cfdffa-4d02-49ee-ae8b-a805370874f5"
-authors = ["RainerHeintzmann <heintzmann@gmail.com>"]
 version = "0.1.0"
+authors = ["RainerHeintzmann <heintzmann@gmail.com>"]
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+EvalMultiPoly = "c78649ec-f9ed-405e-be6d-0472f43586aa"
 FourierTools = "b18b359b-aebc-45ac-a139-9c0ccbb2871e"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+Adapt = "4.7.0"
+Aqua = "0.8"
+BenchmarkTools = "1"
+CUDA = "6"
+ChainRulesCore = "1.26.1"
+EvalMultiPoly = "0.1"
+ForwardDiff = "1"
+FourierTools = "0.4, 0.5"
+Interpolations = "0.15.1, 0.16"
+StaticArrays = "1.9.6, 1.10"
+Test = "1.9.3"
+Zygote = "0.6, 0.7"
+julia = "1"
+
+[extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[targets]
+test = ["Aqua", "Test", "Zygote", "BenchmarkTools", "ForwardDiff", "CUDA"]

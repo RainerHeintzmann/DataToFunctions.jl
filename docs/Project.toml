@@ -1,0 +1,11 @@
+[deps]
+DataToFunctions = "64cfdffa-4d02-49ee-ae8b-a805370874f5"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
+EvalMultiPoly = "c78649ec-f9ed-405e-be6d-0472f43586aa"
+GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+SyntheticObjects = "e7028c27-0967-45e9-8fdb-dbc10ccb2b0a"
